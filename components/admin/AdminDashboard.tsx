@@ -1,13 +1,25 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import useTheme from '../../hooks/useTheme';
 import { useUser } from '../../hooks/useUser';
 import { Ionicons } from '@expo/vector-icons';
-import { ADMIN_STATS, ACTIVITIES } from '../../constants/data';
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export function AdminDashboard() {
   const { colors } = useTheme();
   const { userName } = useUser();
+
+  const stats = useQuery(api.admin.getStats, {});
+  const activities = useQuery(api.admin.getRecentActivities, {});
+
+  if (stats === undefined || activities === undefined) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -23,10 +35,10 @@ export function AdminDashboard() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
         <View style={styles.statsGrid}>
-          <StatCard title="Total Books" value={ADMIN_STATS.totalBooks} icon="book-outline" color="#461691" />
-          <StatCard title="Borrowed" value={ADMIN_STATS.borrowedBooks} icon="swap-horizontal-outline" color="#f59e0b" />
-          <StatCard title="Available" value={ADMIN_STATS.availableBooks} icon="checkmark-circle-outline" color="#10b981" />
-          <StatCard title="Reservations" value={ADMIN_STATS.activeReservations} icon="calendar-outline" color="#3b82f6" />
+          <StatCard title="Total Books" value={stats.totalBooks} icon="book-outline" color="#461691" />
+          <StatCard title="Borrowed" value={stats.borrowedBooks} icon="swap-horizontal-outline" color="#f59e0b" />
+          <StatCard title="Available" value={stats.availableBooks} icon="checkmark-circle-outline" color="#10b981" />
+          <StatCard title="Reservations" value={stats.activeReservations} icon="calendar-outline" color="#3b82f6" />
         </View>
 
         <View style={styles.section}>
@@ -37,23 +49,27 @@ export function AdminDashboard() {
             </TouchableOpacity>
           </View>
           <View style={styles.activityList}>
-            {ACTIVITIES.map(activity => (
-              <View key={activity.id} style={[styles.activityItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={[styles.activityIcon, { backgroundColor: activity.action === 'Borrowed' ? colors.warning + '20' : colors.success + '20' }]}>
-                  <Ionicons 
-                    name={activity.action === 'Borrowed' ? 'arrow-up-outline' : 'arrow-down-outline'} 
-                    size={20} 
-                    color={activity.action === 'Borrowed' ? colors.warning : colors.success} 
-                  />
+            {activities.length > 0 ? (
+               activities.map(activity => (
+                <View key={activity.id} style={[styles.activityItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <View style={[styles.activityIcon, { backgroundColor: activity.action === 'Borrowed' ? colors.warning + '20' : colors.success + '20' }]}>
+                    <Ionicons 
+                      name={activity.action === 'Borrowed' ? 'arrow-up-outline' : 'arrow-down-outline'} 
+                      size={20} 
+                      color={activity.action === 'Borrowed' ? colors.warning : colors.success} 
+                    />
+                  </View>
+                  <View style={styles.activityInfo}>
+                    <Text style={[styles.activityTitle, { color: colors.text }]}>
+                      <Text style={{ fontWeight: 'bold' }}>{activity.studentName}</Text> {activity.action.toLowerCase()} {activity.bookTitle}
+                    </Text>
+                    <Text style={[styles.activityTime, { color: colors.textMuted }]}>{activity.time}</Text>
+                  </View>
                 </View>
-                <View style={styles.activityInfo}>
-                  <Text style={[styles.activityTitle, { color: colors.text }]}>
-                    <Text style={{ fontWeight: 'bold' }}>{activity.studentName}</Text> {activity.action.toLowerCase()} {activity.bookTitle}
-                  </Text>
-                  <Text style={[styles.activityTime, { color: colors.textMuted }]}>{activity.time}</Text>
-                </View>
-              </View>
-            ))}
+              ))
+            ) : (
+              <Text style={{ color: colors.textMuted, textAlign: 'center' }}>No recent activities.</Text>
+            )}
           </View>
         </View>
       </ScrollView>

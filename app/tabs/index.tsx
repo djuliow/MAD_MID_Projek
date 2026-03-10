@@ -5,5 +5,5 @@ import { StudentHome } from '../../components/student/StudentHome';
 
 export default function HomeRouter() {
   const { role } = useUser();
-  return role === 'Librarian' ? <AdminDashboard /> : <StudentHome />;
+  return role === 'librarian' ? <AdminDashboard /> : <StudentHome />;
 }

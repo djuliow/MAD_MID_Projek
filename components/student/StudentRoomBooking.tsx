@@ -1,11 +1,22 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import useTheme from '../../hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
-import { ROOMS } from '../../constants/data';
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export function StudentRoomBooking() {
   const { colors } = useTheme();
+
+  const rooms = useQuery(api.rooms.getRooms, {});
+
+  if (rooms === undefined) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -14,44 +25,58 @@ export function StudentRoomBooking() {
       </View>
 
       <FlatList
-        data={ROOMS}
-        keyExtractor={item => item.id}
+        data={rooms}
+        keyExtractor={item => item._id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.cardHeader}>
-              <View>
-                <Text style={[styles.roomName, { color: colors.text }]}>{item.name}</Text>
-                <View style={styles.capacityRow}>
-                  <Ionicons name="people-outline" size={14} color={colors.textMuted} />
-                  <Text style={[styles.capacityText, { color: colors.textMuted }]}>Up to {item.capacity} people</Text>
+        ListEmptyComponent={
+          <View style={{ alignItems: 'center', marginTop: 50 }}>
+            <Ionicons name="business-outline" size={64} color={colors.textMuted} />
+            <Text style={{ color: colors.text, fontSize: 18, marginTop: 10 }}>No rooms available</Text>
+          </View>
+        }
+        renderItem={({ item }) => {
+          const facilities = item.facilities.split(',').map(f => f.trim());
+          // For now, let's assume status logic or just show Available
+          const isAvailable = true; // Logic could be more complex (checking bookings)
+
+          return (
+            <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={styles.cardHeader}>
+                <View>
+                  <Text style={[styles.roomName, { color: colors.text }]}>{item.room_name}</Text>
+                  <View style={styles.capacityRow}>
+                    <Ionicons name="people-outline" size={14} color={colors.textMuted} />
+                    <Text style={[styles.capacityText, { color: colors.textMuted }]}>Up to {item.capacity} people</Text>
+                  </View>
+                </View>
+                <View style={[styles.statusBadge, { backgroundColor: isAvailable ? colors.success + '20' : colors.danger + '20' }]}>
+                  <Text style={[styles.statusText, { color: isAvailable ? colors.success : colors.danger }]}>
+                    {isAvailable ? 'Available' : 'Booked'}
+                  </Text>
                 </View>
               </View>
-              <View style={[styles.statusBadge, { backgroundColor: item.status === 'Available' ? colors.success + '20' : colors.danger + '20' }]}>
-                <Text style={[styles.statusText, { color: item.status === 'Available' ? colors.success : colors.danger }]}>{item.status}</Text>
-              </View>
-            </View>
 
-            <View style={styles.facilitiesContainer}>
-              <Text style={[styles.facilitiesTitle, { color: colors.text }]}>Facilities:</Text>
-              <View style={styles.facilitiesList}>
-                {item.facilities.map((facility, index) => (
-                  <View key={index} style={[styles.facilityTag, { backgroundColor: colors.bg }]}>
-                    <Text style={[styles.facilityText, { color: colors.text }]}>{facility}</Text>
-                  </View>
-                ))}
+              <View style={styles.facilitiesContainer}>
+                <Text style={[styles.facilitiesTitle, { color: colors.text }]}>Facilities:</Text>
+                <View style={styles.facilitiesList}>
+                  {facilities.map((facility, index) => (
+                    <View key={index} style={[styles.facilityTag, { backgroundColor: colors.bg }]}>
+                      <Text style={[styles.facilityText, { color: colors.text }]}>{facility}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
-            </View>
 
-            <TouchableOpacity 
-              style={[styles.bookButton, { backgroundColor: item.status === 'Available' ? colors.primary : colors.textMuted }]}
-              disabled={item.status !== 'Available'}
-            >
-              <Text style={styles.bookButtonText}>{item.status === 'Available' ? 'Book Room' : 'Unavailable'}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+              <TouchableOpacity 
+                style={[styles.bookButton, { backgroundColor: isAvailable ? colors.primary : colors.textMuted }]}
+                disabled={!isAvailable}
+              >
+                <Text style={styles.bookButtonText}>{isAvailable ? 'Book Room' : 'Unavailable'}</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        }}
       />
     </SafeAreaView>
   );

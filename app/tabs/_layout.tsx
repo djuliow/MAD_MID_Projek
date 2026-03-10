@@ -2,13 +2,43 @@ import useTheme from "../../hooks/useTheme"
 import { useUser } from "../../hooks/useUser"
 import { Ionicons } from "@expo/vector-icons"
 import { Tabs } from 'expo-router'
-import React from 'react'
+import React, { useEffect } from 'react'
+import { View, StyleSheet } from 'react-native'
+import Animated, { useAnimatedStyle, withSpring, useSharedValue } from 'react-native-reanimated'
+
+const TabIcon = ({ name, color, focused }: { name: any, color: string, focused: boolean }) => {
+    const translateY = useSharedValue(0);
+    const scale = useSharedValue(1);
+
+    useEffect(() => {
+        if (focused) {
+            translateY.value = withSpring(-8, { damping: 10, stiffness: 100 });
+            scale.value = withSpring(1.1);
+        } else {
+            translateY.value = withSpring(0);
+            scale.value = withSpring(1);
+        }
+    }, [focused]);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [
+            { translateY: translateY.value },
+            { scale: scale.value }
+        ],
+    }));
+
+    return (
+        <Animated.View style={[styles.iconContainer, animatedStyle]}>
+            <Ionicons name={name} size={24} color={color} />
+        </Animated.View>
+    );
+}
 
 const TabsLayout = () => {
     const { colors } = useTheme();
     const { role } = useUser();
 
-    const isAdmin = role === 'Librarian';
+    const isAdmin = role === 'librarian';
 
     return (
         <Tabs screenOptions={{
@@ -21,6 +51,11 @@ const TabsLayout = () => {
                 height: 70,
                 paddingBottom: 12,
                 paddingTop: 8,
+                elevation: 10,
+                shadowColor: colors.shadow,
+                shadowOffset: { width: 0, height: -2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
             },
             tabBarLabelStyle: {
                 fontSize: 10,
@@ -33,7 +68,7 @@ const TabsLayout = () => {
                 options={{
                     title: isAdmin ? "Dashboard" : "Home",
                     tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
+                        <TabIcon name={focused ? "home" : "home-outline"} color={color} focused={focused} />
                     )
                 }}
             />
@@ -41,9 +76,9 @@ const TabsLayout = () => {
             <Tabs.Screen
                 name='search'
                 options={{
-                    title: isAdmin ? "Books" : "Search",
+                    title: isAdmin ? "Manage Books" : "Search",
                     tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "search" : "search-outline"} size={24} color={color} />
+                        <TabIcon name={focused ? (isAdmin ? "library" : "search") : (isAdmin ? "library-outline" : "search-outline")} color={color} focused={focused} />
                     )
                 }}
             />
@@ -53,7 +88,7 @@ const TabsLayout = () => {
                 options={{
                     title: isAdmin ? "Loans" : "My Books",
                     tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "book" : "book-outline"} size={24} color={color} />
+                        <TabIcon name={focused ? "book" : "book-outline"} color={color} focused={focused} />
                     )
                 }}
             />
@@ -63,7 +98,7 @@ const TabsLayout = () => {
                 options={{
                     title: isAdmin ? "Reservations" : "Rooms",
                     tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "calendar" : "calendar-outline"} size={24} color={color} />
+                        <TabIcon name={focused ? "calendar" : "calendar-outline"} color={color} focused={focused} />
                     )
                 }}
             />
@@ -73,12 +108,22 @@ const TabsLayout = () => {
                 options={{
                     title: isAdmin ? "Admin" : "Profile",
                     tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
+                        <TabIcon name={focused ? "person" : "person-outline"} color={color} focused={focused} />
                     )
                 }}
             />
         </Tabs>
     )
 }
+
+const styles = StyleSheet.create({
+    iconContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+    }
+})
 
 export default TabsLayout

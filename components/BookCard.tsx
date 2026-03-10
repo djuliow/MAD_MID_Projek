@@ -1,13 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
-import { Book } from '../constants/data';
 import useTheme from '../hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Doc } from '../convex/_generated/dataModel';
 
 interface BookCardProps {
-  book: Book;
+  book: Doc<"books">;
   horizontal?: boolean;
 }
 
@@ -18,9 +18,12 @@ export default function BookCard({ book, horizontal = false }: BookCardProps) {
   const handlePress = () => {
     router.push({
       pathname: '/book-detail/[id]',
-      params: { id: book.id }
+      params: { id: book._id }
     });
   };
+
+  const isAvailable = book.available_copies > 0;
+  const statusLabel = isAvailable ? 'Available' : 'Borrowed';
 
   if (horizontal) {
     return (
@@ -29,16 +32,16 @@ export default function BookCard({ book, horizontal = false }: BookCardProps) {
         onPress={handlePress}
       >
         <Image 
-          source={{ uri: book.cover }} 
+          source={{ uri: book.cover_image }} 
           style={styles.horizontalCover} 
           contentFit="cover"
         />
         <View style={styles.horizontalInfo}>
           <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{book.title}</Text>
           <Text style={[styles.author, { color: colors.textMuted }]}>{book.author}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: book.status === 'Available' ? colors.success + '20' : colors.danger + '20' }]}>
-            <Text style={[styles.statusText, { color: book.status === 'Available' ? colors.success : colors.danger }]}>
-              {book.status}
+          <View style={[styles.statusBadge, { backgroundColor: isAvailable ? colors.success + '20' : colors.danger + '20' }]}>
+            <Text style={[styles.statusText, { color: isAvailable ? colors.success : colors.danger }]}>
+              {statusLabel}
             </Text>
           </View>
         </View>
@@ -52,7 +55,7 @@ export default function BookCard({ book, horizontal = false }: BookCardProps) {
       onPress={handlePress}
     >
       <Image 
-        source={{ uri: book.cover }} 
+        source={{ uri: book.cover_image }} 
         style={styles.verticalCover} 
         contentFit="cover"
       />
@@ -60,8 +63,8 @@ export default function BookCard({ book, horizontal = false }: BookCardProps) {
         <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{book.title}</Text>
         <Text style={[styles.author, { color: colors.textMuted }]} numberOfLines={1}>{book.author}</Text>
         <View style={styles.cardFooter}>
-          <Text style={[styles.statusMini, { color: book.status === 'Available' ? colors.success : colors.danger }]}>
-            {book.status}
+          <Text style={[styles.statusMini, { color: isAvailable ? colors.success : colors.danger }]}>
+            {statusLabel}
           </Text>
           <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
         </View>

@@ -8,7 +8,14 @@
  * @module
  */
 
-import type * as todoos from "../todoos.js";
+import type * as admin from "../admin.js";
+import type * as books from "../books.js";
+import type * as borrow from "../borrow.js";
+import type * as init from "../init.js";
+import type * as notifications from "../notifications.js";
+import type * as reservation from "../reservation.js";
+import type * as rooms from "../rooms.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -17,7 +24,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  todoos: typeof todoos;
+  admin: typeof admin;
+  books: typeof books;
+  borrow: typeof borrow;
+  init: typeof init;
+  notifications: typeof notifications;
+  reservation: typeof reservation;
+  rooms: typeof rooms;
+  users: typeof users;
 }>;
 
 /**

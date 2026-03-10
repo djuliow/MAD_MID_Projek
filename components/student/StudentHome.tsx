@@ -1,17 +1,28 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import useTheme from '../../hooks/useTheme';
 import { useUser } from '../../hooks/useUser';
 import { Ionicons } from '@expo/vector-icons';
-import { BOOKS } from '../../constants/data';
 import BookCard from '../BookCard';
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export function StudentHome() {
   const { colors } = useTheme();
   const { userName } = useUser();
 
-  const recommendedBooks = BOOKS.slice(0, 3);
-  const newBooks = BOOKS.slice(3, 5);
+  const books = useQuery(api.books.getBooks, {});
+
+  if (books === undefined) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  const recommendedBooks = books.slice(0, 5);
+  const newBooks = books.slice(5, 10);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -40,33 +51,44 @@ export function StudentHome() {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Recommended Books</Text>
-            <TouchableOpacity>
-              <Text style={[styles.seeAll, { color: colors.primary }]}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-            {recommendedBooks.map(book => (
-              <BookCard key={book.id} book={book} />
-            ))}
-          </ScrollView>
-        </View>
+        {books.length > 0 ? (
+          <>
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Recommended Books</Text>
+                <TouchableOpacity>
+                  <Text style={[styles.seeAll, { color: colors.primary }]}>See All</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
+                {recommendedBooks.map(book => (
+                  <BookCard key={book._id} book={book} />
+                ))}
+              </ScrollView>
+            </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>New Books</Text>
-            <TouchableOpacity>
-              <Text style={[styles.seeAll, { color: colors.primary }]}>See All</Text>
-            </TouchableOpacity>
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>New Books</Text>
+                <TouchableOpacity>
+                  <Text style={[styles.seeAll, { color: colors.primary }]}>See All</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.verticalList}>
+                {newBooks.length > 0 ? newBooks.map(book => (
+                  <BookCard key={book._id} book={book} horizontal />
+                )) : (
+                   <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 10 }}>No more books yet.</Text>
+                )}
+              </View>
+            </View>
+          </>
+        ) : (
+          <View style={{ alignItems: 'center', marginTop: 50 }}>
+            <Ionicons name="book-outline" size={64} color={colors.textMuted} />
+            <Text style={{ color: colors.text, fontSize: 18, marginTop: 10 }}>No books available</Text>
           </View>
-          <View style={styles.verticalList}>
-            {newBooks.map(book => (
-              <BookCard key={book.id} book={book} horizontal />
-            ))}
-          </View>
-        </View>
+        )}
         <View style={{ height: 20 }} />
       </ScrollView>
     </SafeAreaView>
@@ -75,6 +97,7 @@ export function StudentHome() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -5,5 +5,5 @@ import { StudentRoomBooking } from '../../components/student/StudentRoomBooking'
 
 export default function RoomRouter() {
   const { role } = useUser();
-  return role === 'Librarian' ? <AdminRoomManagement /> : <StudentRoomBooking />;
+  return role === 'librarian' ? <AdminRoomManagement /> : <StudentRoomBooking />;
 }

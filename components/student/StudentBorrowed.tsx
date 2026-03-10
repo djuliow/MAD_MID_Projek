@@ -1,55 +1,124 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, SafeAreaView, ActivityIndicator, ScrollView } from 'react-native';
 import useTheme from '../../hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
-import { BORROWED_BOOKS } from '../../constants/data';
 import { Image } from 'expo-image';
+import { useUser } from '../../hooks/useUser';
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export function StudentBorrowed() {
   const { colors } = useTheme();
+  const { user } = useUser();
 
-  const isDueSoon = (dueDate: string) => {
-    const today = new Date('2026-03-08'); 
-    const due = new Date(dueDate);
-    const diffTime = due.getTime() - today.getTime();
+  // Ambil semua data peminjaman milik user ini
+  const borrowedData = useQuery(api.borrow.getBorrowedBooksByUser, 
+    user ? { userId: user._id } : "skip"
+  );
+
+  // Filter hanya yang statusnya 'borrowed' (sedang dibawa)
+  const activeBorrows = borrowedData?.filter(b => b.status === 'borrowed') || [];
+
+  const isDueSoon = (dueDateTimestamp: number) => {
+    const today = Date.now();
+    const diffTime = dueDateTimestamp - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 3 && diffDays >= 0;
   };
 
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  if (!user) {
+     return (
+      <View style={[styles.container, { backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }]}>
+        <Ionicons name="lock-closed-outline" size={64} color={colors.textMuted} />
+        <Text style={{ color: colors.text, marginTop: 10 }}>Please login to see your borrowed books</Text>
+      </View>
+    );
+  }
+
+  if (borrowedData === undefined) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>My Borrowed Books</Text>
+        <Text style={[styles.title, { color: colors.text }]}>My Books</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>Books you are currently holding</Text>
       </View>
 
       <FlatList
-        data={BORROWED_BOOKS}
-        keyExtractor={item => item.id}
+        data={activeBorrows}
+        keyExtractor={item => item._id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={{ alignItems: 'center', marginTop: 80, paddingHorizontal: 40 }}>
+            <View style={[styles.emptyIconCircle, { backgroundColor: colors.surface }]}>
+              <Ionicons name="book-outline" size={48} color={colors.textMuted} />
+            </View>
+            <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginTop: 20 }}>No Active Loans</Text>
+            <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 10 }}>
+              You don't have any books with you right now. Visit the library to pick up your reservations!
+            </Text>
+          </View>
+        }
         renderItem={({ item }) => {
-          const dueSoon = isDueSoon(item.dueDate);
+          if (!item.book || !item.copy) return null;
+          const dueSoon = isDueSoon(item.due_date);
+          const isOverdue = Date.now() > item.due_date;
+
           return (
-            <View style={[styles.card, { backgroundColor: colors.surface, borderColor: dueSoon ? colors.warning : colors.border }]}>
-              <Image source={{ uri: item.cover }} style={styles.cover} contentFit="cover" />
+            <View style={[styles.card, { backgroundColor: colors.surface, borderColor: isOverdue ? colors.danger : (dueSoon ? colors.warning : colors.border) }]}>
+              <Image source={{ uri: item.book.cover_image }} style={styles.cover} contentFit="cover" />
               <View style={styles.info}>
-                <Text style={[styles.bookTitle, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
-                
-                <View style={styles.datesRow}>
-                  <View>
-                    <Text style={[styles.dateLabel, { color: colors.textMuted }]}>Borrowed</Text>
-                    <Text style={[styles.dateText, { color: colors.text }]}>{item.borrowDate}</Text>
+                <View>
+                  <Text style={[styles.bookTitle, { color: colors.text }]} numberOfLines={2}>{item.book.title}</Text>
+                  <View style={styles.copyBadge}>
+                    <Text style={{ color: colors.textMuted, fontSize: 11 }}>Copy: {item.copy.copy_code}</Text>
                   </View>
-                  <View>
-                    <Text style={[styles.dateLabel, { color: colors.textMuted }]}>Due Date</Text>
-                    <Text style={[styles.dateText, { color: dueSoon ? colors.danger : colors.text, fontWeight: dueSoon ? 'bold' : 'normal' }]}>{item.dueDate}</Text>
+                </View>
+                
+                <View style={styles.datesContainer}>
+                  <View style={styles.dateBox}>
+                    <Text style={[styles.dateLabel, { color: colors.textMuted }]}>BORROWED</Text>
+                    <Text style={[styles.dateText, { color: colors.text }]}>{formatDate(item.borrow_date)}</Text>
+                  </View>
+                  <View style={styles.dateBox}>
+                    <Text style={[styles.dateLabel, { color: isOverdue ? colors.danger : colors.textMuted }]}>
+                      {isOverdue ? 'OVERDUE' : 'DUE DATE'}
+                    </Text>
+                    <Text style={[styles.dateText, { color: isOverdue || dueSoon ? colors.danger : colors.text, fontWeight: 'bold' }]}>
+                      {formatDate(item.due_date)}
+                    </Text>
                   </View>
                 </View>
 
-                {dueSoon && (
-                  <View style={[styles.warningContainer, { backgroundColor: colors.warning + '15' }]}>
-                    <Ionicons name="alert-circle-outline" size={16} color={colors.warning} />
-                    <Text style={[styles.warningText, { color: colors.warning }]}>Return soon!</Text>
+                {isOverdue ? (
+                  <View style={[styles.statusBanner, { backgroundColor: colors.danger + '15' }]}>
+                    <Ionicons name="alert-circle" size={16} color={colors.danger} />
+                    <Text style={[styles.statusBannerText, { color: colors.danger }]}>Please return immediately!</Text>
+                  </View>
+                ) : dueSoon ? (
+                  <View style={[styles.statusBanner, { backgroundColor: colors.warning + '15' }]}>
+                    <Ionicons name="time" size={16} color={colors.warning} />
+                    <Text style={[styles.statusBannerText, { color: colors.warning }]}>Return in a few days</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.statusBanner, { backgroundColor: colors.success + '15' }]}>
+                    <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                    <Text style={[styles.statusBannerText, { color: colors.success }]}>Keep reading!</Text>
                   </View>
                 )}
               </View>
@@ -64,15 +133,19 @@ export function StudentBorrowed() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10 },
-  title: { fontSize: 24, fontWeight: 'bold' },
+  title: { fontSize: 28, fontWeight: 'bold' },
+  subtitle: { fontSize: 14, marginTop: 4 },
   listContent: { paddingHorizontal: 20, paddingVertical: 16 },
-  card: { flexDirection: 'row', borderRadius: 16, marginBottom: 16, overflow: 'hidden', borderWidth: 1, elevation: 2 },
-  cover: { width: 100, height: 150 },
-  info: { flex: 1, padding: 12, justifyContent: 'space-between' },
-  bookTitle: { fontSize: 16, fontWeight: 'bold' },
-  datesRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  dateLabel: { fontSize: 10, textTransform: 'uppercase', marginBottom: 2 },
+  card: { flexDirection: 'row', borderRadius: 20, marginBottom: 20, overflow: 'hidden', borderWidth: 1, elevation: 3, height: 180 },
+  cover: { width: 120, height: '100%' },
+  info: { flex: 1, padding: 16, justifyContent: 'space-between' },
+  bookTitle: { fontSize: 16, fontWeight: 'bold', lineHeight: 22 },
+  copyBadge: { backgroundColor: 'rgba(0,0,0,0.05)', alignSelf: 'flex-start', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4 },
+  datesContainer: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 10 },
+  dateBox: { flex: 1 },
+  dateLabel: { fontSize: 9, fontWeight: 'bold', marginBottom: 2 },
   dateText: { fontSize: 13 },
-  warningContainer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, gap: 4 },
-  warningText: { fontSize: 12, fontWeight: '600' },
+  statusBanner: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, gap: 6 },
+  statusBannerText: { fontSize: 12, fontWeight: 'bold' },
+  emptyIconCircle: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center' }
 });

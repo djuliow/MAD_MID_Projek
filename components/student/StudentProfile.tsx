@@ -1,17 +1,20 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Switch, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Switch, ScrollView, Modal, Alert } from 'react-native';
 import useTheme from '../../hooks/useTheme';
 import { useUser } from '../../hooks/useUser';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
+import { StudentBorrowHistory } from './StudentBorrowHistory';
 
 export function StudentProfile() {
   const { colors, isDarkMode, toggleDarkMode } = useTheme();
-  const { userName } = useUser();
+  const { user, userName } = useUser();
   const router = useRouter();
+  const [isHistoryVisible, setHistoryVisible] = useState(false);
 
   const handleLogout = () => router.replace('/login');
+
+  const initial = userName ? userName.charAt(0).toUpperCase() : 'S';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -23,8 +26,8 @@ export function StudentProfile() {
         </View>
 
         <View style={styles.profileSection}>
-          <View style={[styles.avatarContainer, { borderColor: colors.primary }]}>
-            <Image source={{ uri: 'https://i.pravatar.cc/150?u=student' }} style={styles.avatar} />
+          <View style={[styles.avatarContainer, { borderColor: colors.primary, backgroundColor: colors.primary + '20' }]}>
+            <Text style={[styles.initialText, { color: colors.primary }]}>{initial}</Text>
           </View>
 
           <Text style={[styles.userName, { color: colors.text }]}>{userName}</Text>
@@ -34,13 +37,20 @@ export function StudentProfile() {
           </View>
 
           <Text style={[styles.userEmail, { color: colors.textMuted }]}>
-            student@university.edu
+            {user?.email || 'student@university.edu'}
           </Text>
         </View>
 
         <View style={styles.menuContainer}>
 
-          <TouchableOpacity style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <TouchableOpacity 
+            style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => {
+              console.log("Opening history...");
+              setHistoryVisible(true);
+            }}
+            activeOpacity={0.7}
+          >
             <View style={styles.menuItemLeft}>
               <View style={[styles.iconBox, { backgroundColor: colors.primary + '15' }]}>
                 <Ionicons name="time-outline" size={20} color={colors.primary} />
@@ -87,46 +97,35 @@ export function StudentProfile() {
 
       </ScrollView>
 
+      <Modal 
+        visible={isHistoryVisible} 
+        animationType="slide"
+        onRequestClose={() => setHistoryVisible(false)}
+      >
+        <StudentBorrowHistory onClose={() => setHistoryVisible(false)} />
+      </Modal>
+
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-
-  scrollContainer: {
-    paddingBottom: 40
-  },
-
+  scrollContainer: { paddingBottom: 40 },
   header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10 },
-
   title: { fontSize: 24, fontWeight: 'bold' },
-
   profileSection: { alignItems: 'center', paddingVertical: 30 },
-
-  avatarContainer: { width: 110, height: 110, borderRadius: 55, borderWidth: 3, padding: 3, marginBottom: 16 },
-
-  avatar: { width: '100%', height: '100%', borderRadius: 50 },
-
+  avatarContainer: { width: 110, height: 110, borderRadius: 55, borderWidth: 3, padding: 3, marginBottom: 16, justifyContent: 'center', alignItems: 'center' },
+  initialText: { fontSize: 40, fontWeight: 'bold' },
   userName: { fontSize: 22, fontWeight: 'bold', marginBottom: 4 },
-
   roleBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginBottom: 8 },
-
   roleText: { fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase' },
-
   userEmail: { fontSize: 14 },
-
   menuContainer: { paddingHorizontal: 20, gap: 12 },
-
   menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 16, borderWidth: 1 },
-
   menuItemLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-
   iconBox: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-
   menuText: { fontSize: 16, fontWeight: '600' },
-
   logoutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, borderRadius: 16, borderWidth: 1, marginTop: 20, gap: 8 },
-
   logoutText: { fontSize: 16, fontWeight: 'bold' },
 });

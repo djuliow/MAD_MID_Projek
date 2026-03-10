@@ -5,5 +5,5 @@ import { StudentBorrowed } from '../../components/student/StudentBorrowed';
 
 export default function BorrowRouter() {
   const { role } = useUser();
-  return role === 'Librarian' ? <AdminBorrowManagement /> : <StudentBorrowed />;
+  return role === 'librarian' ? <AdminBorrowManagement /> : <StudentBorrowed />;
 }

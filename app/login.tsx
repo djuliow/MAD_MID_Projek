@@ -8,29 +8,60 @@ import {
   KeyboardAvoidingView, 
   Platform, 
   ScrollView, 
-  SafeAreaView 
+  SafeAreaView,
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import useTheme from '../hooks/useTheme';
 import { useUser, UserRole } from '../hooks/useUser';
 import { Ionicons } from '@expo/vector-icons';
+import { useConvex } from "convex/react";
+import { api } from "../convex/_generated/api";
 
 export default function LoginScreen() {
   const { colors } = useTheme();
-  const { setRole } = useUser();
+  const { setRole, setUser } = useUser();
   const router = useRouter();
+  const convex = useConvex();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('Student');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('student');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const primaryColor = '#461691';
 
-  const handleLogin = () => {
-    setRole(selectedRole);
-    // Navigate to the tabs (Home)
-    router.replace('/tabs');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Panggil query login dari Convex menggunakan useConvex client
+      const userData = await convex.query(api.users.login, { email, password });
+      
+      if (userData) {
+        // Cek apakah role yang dipilih sesuai dengan role di database
+        // selectedRole di state bisa 'student' atau 'librarian'
+        if (userData.role !== selectedRole) {
+           Alert.alert("Login Error", `You are registered as a ${userData.role}, not a ${selectedRole}.`);
+           setLoading(false);
+           return;
+        }
+
+        setUser(userData as any);
+        setRole(userData.role as UserRole);
+        router.replace('/tabs');
+      }
+    } catch (error: any) {
+      Alert.alert("Login Failed", "Invalid email or password. Please contact the library if you haven't received your password.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -54,36 +85,38 @@ export default function LoginScreen() {
           {/* 2. Title & 3. Subtitle */}
           <View style={styles.headerTextSection}>
             <Text style={[styles.title, { color: '#1e1b4b' }]}>Welcome to Campus Library</Text>
-            <Text style={[styles.subtitle, { color: '#6b7280' }]}>Login using your campus email</Text>
+            <Text style={[styles.subtitle, { color: '#6b7280' }]}>
+              {selectedRole === 'student' ? 'Login using your student email' : 'Login using your staff email'}
+            </Text>
           </View>
 
-          {/* 4. Role Selector (Segmented Button Style) */}
+          {/* 4. Role Selector */}
           <View style={styles.roleSelectorContainer}>
             <View style={[styles.segmentedControl, { backgroundColor: '#f3e8ff' }]}>
               <TouchableOpacity 
                 style={[
                   styles.segmentButton, 
-                  selectedRole === 'Student' && { backgroundColor: primaryColor }
+                  selectedRole === 'student' && { backgroundColor: primaryColor }
                 ]}
-                onPress={() => setSelectedRole('Student')}
+                onPress={() => setSelectedRole('student')}
                 activeOpacity={0.8}
               >
                 <Text style={[
                   styles.segmentText, 
-                  { color: selectedRole === 'Student' ? '#ffffff' : primaryColor }
+                  { color: selectedRole === 'student' ? '#ffffff' : primaryColor }
                 ]}>Student</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[
                   styles.segmentButton, 
-                  selectedRole === 'Librarian' && { backgroundColor: primaryColor }
+                  selectedRole === 'librarian' && { backgroundColor: primaryColor }
                 ]}
-                onPress={() => setSelectedRole('Librarian')}
+                onPress={() => setSelectedRole('librarian')}
                 activeOpacity={0.8}
               >
                 <Text style={[
                   styles.segmentText, 
-                  { color: selectedRole === 'Librarian' ? '#ffffff' : primaryColor }
+                  { color: selectedRole === 'librarian' ? '#ffffff' : primaryColor }
                 ]}>Librarian</Text>
               </TouchableOpacity>
             </View>
@@ -92,12 +125,12 @@ export default function LoginScreen() {
           <View style={styles.formContainer}>
             {/* 5. Email Input Field */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Campus Email</Text>
+              <Text style={styles.inputLabel}>Email</Text>
               <View style={styles.inputWrapper}>
                 <Ionicons name="mail-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
                 <TextInput
                   style={styles.textInput}
-                  placeholder="Enter your campus email"
+                  placeholder={`Enter your ${selectedRole} email`}
                   placeholderTextColor="#9ca3af"
                   value={email}
                   onChangeText={setEmail}
@@ -139,9 +172,14 @@ export default function LoginScreen() {
             <TouchableOpacity 
               style={[styles.loginButton, { backgroundColor: primaryColor }]}
               onPress={handleLogin}
+              disabled={loading}
               activeOpacity={0.9}
             >
-              <Text style={styles.loginButtonText}>Login</Text>
+              {loading ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text style={styles.loginButtonText}>Login</Text>
+              )}
             </TouchableOpacity>
           </View>
 
