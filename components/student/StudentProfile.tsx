@@ -4,13 +4,19 @@ import useTheme from '../../hooks/useTheme';
 import { useUser } from '../../hooks/useUser';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { StudentBorrowHistory } from './StudentBorrowHistory';
+import { StudentPointHistory } from './StudentPointHistory';
+import { StudentFavorites } from './StudentFavorites';
 
 export function StudentProfile() {
   const { colors, isDarkMode, toggleDarkMode } = useTheme();
   const { user, userName } = useUser();
   const router = useRouter();
   const [isHistoryVisible, setHistoryVisible] = useState(false);
+  const [isPointsVisible, setPointsVisible] = useState(false);
+  const [isFavVisible, setFavVisible] = useState(false);
 
   const handleLogout = () => router.replace('/login');
 
@@ -46,6 +52,23 @@ export function StudentProfile() {
           <TouchableOpacity 
             style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => {
+              console.log("Opening points...");
+              setPointsVisible(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconBox, { backgroundColor: '#FFD700' + '15' }]}>
+                <Ionicons name="star-outline" size={20} color="#f57f17" />
+              </View>
+              <Text style={[styles.menuText, { color: colors.text }]}>Point History</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => {
               console.log("Opening history...");
               setHistoryVisible(true);
             }}
@@ -60,7 +83,10 @@ export function StudentProfile() {
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <TouchableOpacity 
+            style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => setFavVisible(true)}
+          >
             <View style={styles.menuItemLeft}>
               <View style={[styles.iconBox, { backgroundColor: colors.primary + '15' }]}>
                 <Ionicons name="heart-outline" size={20} color={colors.primary} />
@@ -103,6 +129,22 @@ export function StudentProfile() {
         onRequestClose={() => setHistoryVisible(false)}
       >
         <StudentBorrowHistory onClose={() => setHistoryVisible(false)} />
+      </Modal>
+
+      <Modal 
+        visible={isPointsVisible} 
+        animationType="slide"
+        onRequestClose={() => setPointsVisible(false)}
+      >
+        <StudentPointHistory onClose={() => setPointsVisible(false)} />
+      </Modal>
+
+      <Modal 
+        visible={isFavVisible} 
+        animationType="slide"
+        onRequestClose={() => setFavVisible(false)}
+      >
+        <StudentFavorites onClose={() => setFavVisible(false)} />
       </Modal>
 
     </SafeAreaView>

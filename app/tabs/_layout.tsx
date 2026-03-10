@@ -76,7 +76,7 @@ const TabsLayout = () => {
             <Tabs.Screen
                 name='search'
                 options={{
-                    title: isAdmin ? "Manage Books" : "Search",
+                    title: isAdmin ? "Assets" : "Search",
                     tabBarIcon: ({ color, focused }) => (
                         <TabIcon name={focused ? (isAdmin ? "library" : "search") : (isAdmin ? "library-outline" : "search-outline")} color={color} focused={focused} />
                     )

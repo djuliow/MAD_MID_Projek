@@ -69,7 +69,15 @@ export default function BookDetailScreen() {
   };
 
   const isAvailable = book.available_copies > 0;
-  const statusLabel = isAvailable ? 'Available' : 'Borrowed';
+  const isComingSoon = book.is_coming_soon;
+  
+  let statusLabel = isAvailable ? 'Available' : 'Borrowed';
+  let badgeColor = isAvailable ? colors.success : colors.danger;
+  
+  if (isComingSoon) {
+    statusLabel = 'Coming Soon';
+    badgeColor = '#00838F';
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -93,33 +101,35 @@ export default function BookDetailScreen() {
               <Text style={[styles.title, { color: colors.text }]}>{book.title}</Text>
               <Text style={[styles.author, { color: colors.textMuted }]}>{book.author}</Text>
             </View>
-            <View style={[styles.statusBadge, { backgroundColor: isAvailable ? colors.success + '20' : colors.danger + '20' }]}>
-              <Text style={[styles.statusText, { color: isAvailable ? colors.success : colors.danger }]}>
+            <View style={[styles.statusBadge, { backgroundColor: badgeColor + '20' }]}>
+              <Text style={[styles.statusText, { color: badgeColor }]}>
                 {statusLabel}
               </Text>
             </View>
           </View>
 
           {/* Moved: Reservation Type Selector (Now at Top) */}
-          <View style={styles.typeSection}>
-            <Text style={[styles.typeHeader, { color: colors.text }]}>How will you read this?</Text>
-            <View style={styles.typeContainer}>
-              <TouchableOpacity 
-                style={[styles.typeOption, { borderColor: colors.primary, backgroundColor: reservationType === 'take_home' ? colors.primary : 'transparent' }]}
-                onPress={() => setReservationType('take_home')}
-              >
-                <Ionicons name="home-outline" size={18} color={reservationType === 'take_home' ? '#fff' : colors.primary} />
-                <Text style={[styles.typeText, { color: reservationType === 'take_home' ? '#fff' : colors.primary }]}>Take Home</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.typeOption, { borderColor: colors.primary, backgroundColor: reservationType === 'in_library' ? colors.primary : 'transparent' }]}
-                onPress={() => setReservationType('in_library')}
-              >
-                <Ionicons name="business-outline" size={18} color={reservationType === 'in_library' ? '#fff' : colors.primary} />
-                <Text style={[styles.typeText, { color: reservationType === 'in_library' ? '#fff' : colors.primary }]}>In Library</Text>
-              </TouchableOpacity>
+          {!isComingSoon && (
+            <View style={styles.typeSection}>
+              <Text style={[styles.typeHeader, { color: colors.text }]}>How will you read this?</Text>
+              <View style={styles.typeContainer}>
+                <TouchableOpacity 
+                  style={[styles.typeOption, { borderColor: colors.primary, backgroundColor: reservationType === 'take_home' ? colors.primary : 'transparent' }]}
+                  onPress={() => setReservationType('take_home')}
+                >
+                  <Ionicons name="home-outline" size={18} color={reservationType === 'take_home' ? '#fff' : colors.primary} />
+                  <Text style={[styles.typeText, { color: reservationType === 'take_home' ? '#fff' : colors.primary }]}>Take Home</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.typeOption, { borderColor: colors.primary, backgroundColor: reservationType === 'in_library' ? colors.primary : 'transparent' }]}
+                  onPress={() => setReservationType('in_library')}
+                >
+                  <Ionicons name="business-outline" size={18} color={reservationType === 'in_library' ? '#fff' : colors.primary} />
+                  <Text style={[styles.typeText, { color: reservationType === 'in_library' ? '#fff' : colors.primary }]}>In Library</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          )}
 
           <View style={styles.statsContainer}>
             <View style={[styles.statBox, { backgroundColor: colors.surface }]}>
@@ -150,15 +160,18 @@ export default function BookDetailScreen() {
           <Ionicons name="heart-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.reserveBtn, { backgroundColor: isAvailable ? colors.primary : colors.textMuted }]}
-          disabled={!isAvailable || isReserving}
+          style={[
+            styles.reserveBtn, 
+            { backgroundColor: isComingSoon ? '#00838F' : (isAvailable ? colors.primary : colors.textMuted) }
+          ]}
+          disabled={!isAvailable || isReserving || isComingSoon}
           onPress={handleReserve}
         >
           {isReserving ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
             <Text style={styles.reserveBtnText}>
-              {isAvailable ? 'Reserve Book' : 'Currently Unavailable'}
+              {isComingSoon ? 'Coming Soon' : (isAvailable ? 'Reserve Book' : 'Currently Unavailable')}
             </Text>
           )}
         </TouchableOpacity>

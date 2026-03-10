@@ -1,14 +1,19 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, Modal } from 'react-native';
 import useTheme from '../../hooks/useTheme';
 import { useUser } from '../../hooks/useUser';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import AdminAttendanceCode from './AdminAttendanceCode';
+import AdminVisitorLogs from './AdminVisitorLogs';
+import AdminRoomLiveStatus from './AdminRoomLiveStatus';
+import { AdminActivityHistory } from './AdminActivityHistory';
 
 export function AdminDashboard() {
   const { colors } = useTheme();
   const { userName } = useUser();
+  const [isHistoryVisible, setHistoryVisible] = useState(false);
 
   const stats = useQuery(api.admin.getStats, {});
   const activities = useQuery(api.admin.getRecentActivities, {});
@@ -41,38 +46,87 @@ export function AdminDashboard() {
           <StatCard title="Reservations" value={stats.activeReservations} icon="calendar-outline" color="#3b82f6" />
         </View>
 
-        <View style={styles.section}>
+        <AdminAttendanceCode />
+
+        <AdminVisitorLogs />
+
+        <AdminRoomLiveStatus />
+
+        <View style={[styles.section, { paddingBottom: 40 }]}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Activity</Text>
-            <TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="time-outline" size={20} color={colors.text} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Activity</Text>
+            </View>
+            <TouchableOpacity onPress={() => setHistoryVisible(true)}>
               <Text style={[styles.seeAll, { color: colors.primary }]}>View All</Text>
             </TouchableOpacity>
           </View>
+          
           <View style={styles.activityList}>
             {activities.length > 0 ? (
-               activities.map(activity => (
-                <View key={activity.id} style={[styles.activityItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <View style={[styles.activityIcon, { backgroundColor: activity.action === 'Borrowed' ? colors.warning + '20' : colors.success + '20' }]}>
-                    <Ionicons 
-                      name={activity.action === 'Borrowed' ? 'arrow-up-outline' : 'arrow-down-outline'} 
-                      size={20} 
-                      color={activity.action === 'Borrowed' ? colors.warning : colors.success} 
-                    />
+               activities.map(activity => {
+                let iconName: any = 'swap-horizontal-outline';
+                let iconColor = colors.primary;
+                let bgColor = colors.primary + '20';
+
+                if (activity.action === 'Borrowed') {
+                  iconName = 'arrow-up-outline';
+                  iconColor = colors.warning;
+                  bgColor = colors.warning + '20';
+                } else if (activity.action === 'Returned') {
+                  iconName = 'arrow-down-outline';
+                  iconColor = colors.success;
+                  bgColor = colors.success + '20';
+                } else if (activity.action === 'Reserved') {
+                  iconName = 'bookmark-outline';
+                  iconColor = '#3b82f6'; // Biru untuk reservasi
+                  bgColor = '#3b82f620';
+                } else if (activity.action === 'Room Booked') {
+                  iconName = 'business-outline';
+                  iconColor = '#8b5cf6'; // Ungu untuk booking ruangan
+                  bgColor = '#8b5cf620';
+                } else if (activity.action === 'Room Finished') {
+                  iconName = 'checkmark-done-outline';
+                  iconColor = colors.success;
+                  bgColor = colors.success + '20';
+                } else if (activity.action === 'Room Cancelled') {
+                  iconName = 'close-circle-outline';
+                  iconColor = colors.danger;
+                  bgColor = colors.danger + '20';
+                }
+
+                return (
+                  <View key={activity.id} style={[styles.activityItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <View style={[styles.activityIcon, { backgroundColor: bgColor }]}>
+                      <Ionicons name={iconName} size={20} color={iconColor} />
+                    </View>
+                    <View style={styles.activityInfo}>
+                      <Text style={[styles.activityTitle, { color: colors.text }]}>
+                        <Text style={{ fontWeight: 'bold' }}>{activity.studentName}</Text> {activity.action.toLowerCase()} {activity.bookTitle}
+                      </Text>
+                      <Text style={[styles.activityTime, { color: colors.textMuted }]}>{activity.time}</Text>
+                    </View>
                   </View>
-                  <View style={styles.activityInfo}>
-                    <Text style={[styles.activityTitle, { color: colors.text }]}>
-                      <Text style={{ fontWeight: 'bold' }}>{activity.studentName}</Text> {activity.action.toLowerCase()} {activity.bookTitle}
-                    </Text>
-                    <Text style={[styles.activityTime, { color: colors.textMuted }]}>{activity.time}</Text>
-                  </View>
-                </View>
-              ))
+                );
+              })
             ) : (
-              <Text style={{ color: colors.textMuted, textAlign: 'center' }}>No recent activities.</Text>
+              <View style={styles.emptyActivity}>
+                <Ionicons name="receipt-outline" size={40} color={colors.textMuted + '50'} />
+                <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 8 }}>No transactions yet.</Text>
+              </View>
             )}
           </View>
         </View>
       </ScrollView>
+
+      <Modal 
+        visible={isHistoryVisible} 
+        animationType="slide"
+        onRequestClose={() => setHistoryVisible(false)}
+      >
+        <AdminActivityHistory onClose={() => setHistoryVisible(false)} />
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -164,4 +218,14 @@ const styles = StyleSheet.create({
   activityInfo: { flex: 1 },
   activityTitle: { fontSize: 14, lineHeight: 20 },
   activityTime: { fontSize: 12, marginTop: 2 },
+  emptyActivity: { 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    padding: 30, 
+    backgroundColor: 'rgba(0,0,0,0.02)', 
+    borderRadius: 20, 
+    borderStyle: 'dashed', 
+    borderWidth: 1, 
+    borderColor: '#ccc' 
+  }
 });

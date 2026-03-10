@@ -26,19 +26,35 @@ export function AdminRoomManagement() {
   };
 
   const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString('en-US', {
+    return new Date(timestamp).toLocaleTimeString('id-ID', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Asia/Makassar'
     });
   };
 
-  const handleRoomStatusUpdate = async (bookingId: any, status: 'completed' | 'cancelled') => {
-    try {
-      await updateRoomStatus({ bookingId, status });
-      Alert.alert("Success", `Room booking ${status}`);
-    } catch (error) {
-      Alert.alert("Error", `Failed to ${status} booking`);
-    }
+  const handleRoomStatusUpdate = async (bookingId: any, roomName: string, status: 'completed' | 'cancelled') => {
+    const actionText = status === 'completed' ? 'Selesaikan' : 'Batalkan';
+    const confirmText = status === 'completed' ? 'Ya, Selesai' : 'Ya, Batalkan';
+
+    Alert.alert(
+      `${actionText} Pemakaian`,
+      `Apakah Anda yakin ingin ${actionText.toLowerCase()} pesanan untuk ${roomName}?`,
+      [
+        { text: "Kembali", style: "cancel" },
+        { 
+          text: confirmText, 
+          onPress: async () => {
+            try {
+              await updateRoomStatus({ bookingId, status });
+              Alert.alert("Sukses", `Pesanan ruangan berhasil di${status === 'completed' ? 'selesaikan' : 'batalkan'}.`);
+            } catch (error) {
+              Alert.alert("Error", "Gagal memperbarui status.");
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleBookStatusUpdate = async (reservationId: any, status: 'completed' | 'expired') => {
@@ -177,14 +193,14 @@ export function AdminRoomManagement() {
               {item.status === 'active' && (
                 <View style={styles.adminActions}>
                   <TouchableOpacity 
-                    style={[styles.adminActionBtn, { backgroundColor: colors.primary }]}
-                    onPress={() => handleRoomStatusUpdate(item._id, 'completed')}
+                    style={[styles.adminActionBtn, { backgroundColor: colors.success }]}
+                    onPress={() => handleRoomStatusUpdate(item._id, item.room?.room_name || "Ruangan", 'completed')}
                   >
-                    <Text style={styles.adminActionText}>Complete</Text>
+                    <Text style={styles.adminActionText}>Finish</Text>
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={[styles.adminActionBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.danger }]}
-                    onPress={() => handleRoomStatusUpdate(item._id, 'cancelled')}
+                    onPress={() => handleRoomStatusUpdate(item._id, item.room?.room_name || "Ruangan", 'cancelled')}
                   >
                     <Text style={[styles.adminActionText, { color: colors.danger }]}>Cancel</Text>
                   </TouchableOpacity>

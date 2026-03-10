@@ -9,8 +9,10 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as attendance from "../attendance.js";
 import type * as books from "../books.js";
 import type * as borrow from "../borrow.js";
+import type * as favorites from "../favorites.js";
 import type * as init from "../init.js";
 import type * as notifications from "../notifications.js";
 import type * as reservation from "../reservation.js";
@@ -25,8 +27,10 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  attendance: typeof attendance;
   books: typeof books;
   borrow: typeof borrow;
+  favorites: typeof favorites;
   init: typeof init;
   notifications: typeof notifications;
   reservation: typeof reservation;

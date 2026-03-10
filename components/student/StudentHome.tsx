@@ -6,14 +6,17 @@ import { Ionicons } from '@expo/vector-icons';
 import BookCard from '../BookCard';
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import StudentAttendanceCheckIn from './StudentAttendanceCheckIn';
 
 export function StudentHome() {
   const { colors } = useTheme();
-  const { userName } = useUser();
+  const { user } = useUser();
 
   const books = useQuery(api.books.getBooks, {});
+  const latestBooks = useQuery(api.books.getLatestBooks, { limit: 5 });
+  const userData = useQuery(api.users.getUserById, { id: user?._id as any });
 
-  if (books === undefined) {
+  if (books === undefined || latestBooks === undefined || userData === undefined) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.bg }]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -29,11 +32,12 @@ export function StudentHome() {
       <View style={styles.header}>
         <View>
           <Text style={[styles.welcomeText, { color: colors.textMuted }]}>Welcome,</Text>
-          <Text style={[styles.nameText, { color: colors.text }]}>{userName}</Text>
+          <Text style={[styles.nameText, { color: colors.text }]}>{user?.name}</Text>
         </View>
-        <TouchableOpacity style={[styles.notificationBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Ionicons name="notifications-outline" size={24} color={colors.text} />
-        </TouchableOpacity>
+        <View style={styles.pointsContainer}>
+          <Ionicons name="star" size={16} color="#FFD700" />
+          <Text style={styles.pointsText}>{userData?.library_points ?? 0} Poin</Text>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -50,6 +54,8 @@ export function StudentHome() {
             </TouchableOpacity>
           </View>
         </View>
+
+        <StudentAttendanceCheckIn />
 
         {books.length > 0 ? (
           <>
@@ -75,7 +81,7 @@ export function StudentHome() {
                 </TouchableOpacity>
               </View>
               <View style={styles.verticalList}>
-                {newBooks.length > 0 ? newBooks.map(book => (
+                {latestBooks.length > 0 ? latestBooks.map(book => (
                   <BookCard key={book._id} book={book} horizontal />
                 )) : (
                    <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 10 }}>No more books yet.</Text>
@@ -108,6 +114,22 @@ const styles = StyleSheet.create({
   },
   welcomeText: { fontSize: 14 },
   nameText: { fontSize: 20, fontWeight: 'bold' },
+  pointsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff9c4',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#fbc02d',
+  },
+  pointsText: {
+    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#f57f17',
+  },
   notificationBtn: {
     width: 44,
     height: 44,
