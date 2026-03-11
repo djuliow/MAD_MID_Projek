@@ -1,5 +1,5 @@
 import { mutation, query } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 
 export const createUser = mutation({
   args: {
@@ -15,7 +15,7 @@ export const createUser = mutation({
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .unique();
     if (existing) {
-      throw new Error("User already exists");
+      throw new ConvexError("User already exists");
     }
     return await ctx.db.insert("users", {
       ...args,
@@ -53,12 +53,13 @@ export const login = query({
       .unique();
 
     if (!user || user.password !== args.password) {
-      throw new Error("Invalid email or password");
+      throw new ConvexError("Email atau password salah.");
     }
 
     return user;
   },
 });
+
 
 export const getStudents = query({
   handler: async (ctx) => {

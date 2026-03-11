@@ -16,6 +16,7 @@ export function AdminBorrowManagement() {
   const [selectedStudent, setSelectedStudent] = useState<Doc<"users"> | null>(null);
   const [selectedBook, setSelectedBook] = useState<Doc<"books"> | null>(null);
   const [selectedCopyId, setSelectedCopyId] = useState<Id<"bookCopies"> | null>(null);
+  const [loanType, setLoanType] = useState<'take_home' | 'in_library'>('take_home');
   const [daysToBorrow, setDaysToBorrow] = useState('7');
   const [formSearchStudent, setFormSearchStudent] = useState('');
   const [formSearchBook, setFormSearchBook] = useState('');
@@ -73,13 +74,17 @@ export function AdminBorrowManagement() {
       return;
     }
 
-    const dueDate = Date.now() + (parseInt(daysToBorrow) || 7) * 24 * 60 * 60 * 1000;
+    // If in_library, due date is end of today (approx 12 hours from now)
+    // If take_home, use daysToBorrow
+    const duration = loanType === 'in_library' ? 0.5 : (parseInt(daysToBorrow) || 7);
+    const dueDate = Date.now() + duration * 24 * 60 * 60 * 1000;
 
     try {
       await borrowBook({
         userId: selectedStudent._id,
         copyId: selectedCopyId,
-        dueDate
+        dueDate,
+        type: loanType
       });
       Alert.alert("Success", "Loan recorded successfully");
       setModalVisible(false);
@@ -93,6 +98,8 @@ export function AdminBorrowManagement() {
     setSelectedStudent(null);
     setSelectedBook(null);
     setSelectedCopyId(null);
+    setLoanType('take_home');
+    setDaysToBorrow('7');
     setFormSearchStudent('');
     setFormSearchBook('');
   };
@@ -261,13 +268,39 @@ export function AdminBorrowManagement() {
                   {availableCopies?.length === 0 && <Text style={{ color: colors.danger }}>No copies available</Text>}
                 </View>
 
-                <Text style={[styles.label, { color: colors.text, marginTop: 20 }]}>4. Duration (Days)</Text>
-                <TextInput 
-                  keyboardType="numeric"
-                  style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-                  value={daysToBorrow}
-                  onChangeText={setDaysToBorrow}
-                />
+                <Text style={[styles.label, { color: colors.text, marginTop: 20 }]}>4. Loan Type</Text>
+                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+                  <TouchableOpacity 
+                    style={[styles.typeOption, { 
+                      borderColor: colors.primary, 
+                      backgroundColor: loanType === 'take_home' ? colors.primary : 'transparent' 
+                    }]}
+                    onPress={() => setLoanType('take_home')}
+                  >
+                    <Text style={{ color: loanType === 'take_home' ? '#fff' : colors.primary, fontWeight: 'bold' }}>Bawa Pulang</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.typeOption, { 
+                      borderColor: colors.primary, 
+                      backgroundColor: loanType === 'in_library' ? colors.primary : 'transparent' 
+                    }]}
+                    onPress={() => setLoanType('in_library')}
+                  >
+                    <Text style={{ color: loanType === 'in_library' ? '#fff' : colors.primary, fontWeight: 'bold' }}>Baca di Perpus</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {loanType === 'take_home' && (
+                  <>
+                    <Text style={[styles.label, { color: colors.text, marginTop: 10 }]}>5. Duration (Days)</Text>
+                    <TextInput 
+                      keyboardType="numeric"
+                      style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+                      value={daysToBorrow}
+                      onChangeText={setDaysToBorrow}
+                    />
+                  </>
+                )}
               </>
             )}
           </ScrollView>
@@ -312,4 +345,5 @@ const styles = StyleSheet.create({
   selectedBox: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderRadius: 12, borderWidth: 1, marginBottom: 10 },
   copyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   copyChip: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  typeOption: { flex: 1, height: 44, borderRadius: 12, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
 });

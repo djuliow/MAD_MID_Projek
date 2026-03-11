@@ -1,5 +1,5 @@
 import { mutation, query } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 
 export const getUserReservations = query({
   args: { userId: v.id("users") },
@@ -44,11 +44,12 @@ export const reserveBook = mutation({
     userId: v.id("users"),
     bookId: v.id("books"),
     type: v.union(v.literal("in_library"), v.literal("take_home")),
+    pickupDeadline: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const book = await ctx.db.get(args.bookId);
     if (!book || book.available_copies <= 0) {
-      throw new Error("No available copies");
+      throw new ConvexError("Stok buku habis atau tidak tersedia.");
     }
 
     // Check for existing active reservation
@@ -59,11 +60,11 @@ export const reserveBook = mutation({
       .unique();
 
     if (existing) {
-      throw new Error("You already have an active reservation");
+      throw new ConvexError("Anda sudah memiliki reservasi aktif.");
     }
 
-    // deadline is 2 hours from now
-    const deadline = Date.now() + (2 * 60 * 60 * 1000);
+    // deadline is 2 hours from now by default, or use provided one
+    const deadline = args.pickupDeadline || (Date.now() + (2 * 60 * 60 * 1000));
 
     return await ctx.db.insert("bookReservation", {
       id_user: args.userId,
@@ -97,12 +98,12 @@ export const confirmPickup = mutation({
   handler: async (ctx, args) => {
     const reservation = await ctx.db.get(args.reservationId);
     if (!reservation || reservation.status !== "active") {
-      throw new Error("Invalid reservation");
+      throw new ConvexError("Reservasi tidak valid atau sudah diproses.");
     }
 
     const book = await ctx.db.get(reservation.id_book);
     if (!book || book.available_copies <= 0) {
-      throw new Error("Book no longer available");
+      throw new ConvexError("Buku sudah tidak tersedia lagi.");
     }
 
     // 1. find available copy
@@ -112,7 +113,7 @@ export const confirmPickup = mutation({
       .filter((q) => q.eq(q.field("status"), "available"))
       .first();
 
-    if (!copy) throw new Error("No physical copy available");
+    if (!copy) throw new ConvexError("Tidak ada fisik buku yang tersedia.");
 
     // 2. update statuses
     await ctx.db.patch(reservation._id, { status: "completed", updated_at: Date.now() });
@@ -125,30 +126,46 @@ export const confirmPickup = mutation({
     const durationDays = reservation.type === 'take_home' ? 7 : 1; 
     const dueDate = Date.now() + (durationDays * 24 * 60 * 60 * 1000);
 
+    // Pastikan tipe dari reservasi mahasiswa (bawa pulang/perpus) dipindah ke sini
     await ctx.db.insert("borrow", {
       id_user: reservation.id_user,
       id_copy: copy._id,
       borrow_date: Date.now(),
       due_date: dueDate,
       status: "borrowed",
-      type: reservation.type,
+      type: reservation.type, 
     });
 
     // 4. Reward Points based on type
-    const reward = reservation.type === 'in_library' ? 20 : 5;
+    let reward = 0;
+    if (reservation.type === 'in_library') {
+      reward = 20; // Langsung 20 untuk baca di perpus
+    } else {
+      reward = 5; // Cuma 5 untuk awal bawa pulang
+    }
+
     const user = await ctx.db.get(reservation.id_user);
-    if (user) {
+    if (user && reward > 0) {
       await ctx.db.patch(reservation.id_user, {
         library_points: (user.library_points ?? 0) + reward,
+      });
+
+      // ADD TO POINT HISTORY (LOGS)
+      await ctx.db.insert("pointLogs", {
+        id_user: reservation.id_user,
+        activity_type: "borrow",
+        description: `Ambil Buku: ${book.title} (${reservation.type === 'in_library' ? 'Baca di Perpus' : 'Bawa Pulang'})`,
+        points: reward,
+        timestamp: Date.now(),
       });
     }
 
     // 5. Create notification
-    const durationText = reservation.type === 'take_home' ? "within 7 days" : "before the library closes today";
+    const durationText = reservation.type === 'take_home' ? "dalam 7 hari" : "sebelum perpustakaan tutup hari ini";
     await ctx.db.insert("notification", {
       id_user: reservation.id_user,
-      title: "Loan Started!",
-      message: `You have picked up \"${book.title}\". Reward: +${reward} Poin. Please return it ${durationText}.`,
+      title: "Peminjaman Dimulai!",
+      message: `Anda telah mengambil buku \"${book.title}\". Reward: +${reward} Poin. Silakan kembalikan ${durationText}.`,
       send_date: Date.now(),
       status_read: false,
     });
@@ -156,3 +173,4 @@ export const confirmPickup = mutation({
     return true;
   },
 });
+

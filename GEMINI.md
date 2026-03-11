@@ -190,5 +190,3 @@ Generate the following files:
 * convex/notifications.ts
 
 Each file should contain working Convex queries and mutations with proper argument validation.
-
-Follow best practices for Convex backend architecture, modular code structure, and scalable database relationships.

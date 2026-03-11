@@ -62,7 +62,9 @@ export default function BookDetailScreen() {
         [{ text: "OK", onPress: () => router.back() }]
       );
     } catch (error: any) {
-      Alert.alert("Reservation Failed", error.message || "Something went wrong.");
+      // Mengambil pesan error bersih dari ConvexError
+      const errorMessage = error.data || error.message || "Something went wrong.";
+      Alert.alert("Reservation Failed", errorMessage);
     } finally {
       setIsReserving(false);
     }

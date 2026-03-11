@@ -3,7 +3,7 @@
  * Last Updated: 2026-03-11
  */
 import { mutation, query } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 
 /**
  * Mendapatkan format tanggal YYYY-MM-DD sesuai zona waktu WITA (Asia/Makassar)
@@ -36,7 +36,7 @@ export const createDailyCode = mutation({
       .unique();
     
     if (existing) {
-      throw new Error("Kode untuk hari ini sudah dibuat.");
+      throw new ConvexError("Kode untuk hari ini sudah dibuat.");
     }
 
     return await ctx.db.insert("dailyCodes", {
@@ -74,7 +74,7 @@ export const submitDailyCode = mutation({
       .unique();
 
     if (!dailyCode || dailyCode.code !== inputCode) {
-      throw new Error("Kode tidak valid.");
+      return { success: false, message: "Kode tidak valid." };
     }
 
     const alreadyAttended = await ctx.db
@@ -83,7 +83,7 @@ export const submitDailyCode = mutation({
       .unique();
 
     if (alreadyAttended) {
-      throw new Error("Anda sudah absen hari ini.");
+      return { success: false, message: "Anda sudah absen hari ini." };
     }
 
     // 1. Catat Kehadiran
@@ -95,7 +95,8 @@ export const submitDailyCode = mutation({
 
     // 2. Update Poin User
     const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error("User not found");
+    if (!user) return { success: false, message: "User tidak ditemukan." };
+    
     await ctx.db.patch(args.userId, {
       library_points: (user.library_points ?? 0) + dailyCode.points_value,
     });
@@ -109,7 +110,7 @@ export const submitDailyCode = mutation({
       timestamp: Date.now(),
     });
 
-    return { success: true, points: dailyCode.points_value };
+    return { success: true, message: "Absensi berhasil!", points: dailyCode.points_value };
   },
 });
 
@@ -120,10 +121,10 @@ export const redeemPoints = mutation({
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new ConvexError("User not found");
 
     const currentPoints = user.library_points ?? 0;
-    if (currentPoints < args.amountToRedeem) throw new Error("Poin tidak cukup.");
+    if (currentPoints < args.amountToRedeem) throw new ConvexError("Poin tidak cukup.");
 
     await ctx.db.patch(args.userId, {
       library_points: currentPoints - args.amountToRedeem,
@@ -141,6 +142,7 @@ export const redeemPoints = mutation({
     return { success: true };
   },
 });
+
 
 export const getUserPointHistory = query({
   args: { userId: v.id("users") },

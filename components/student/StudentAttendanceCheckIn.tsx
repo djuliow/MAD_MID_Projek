@@ -41,11 +41,19 @@ const StudentAttendanceCheckIn = () => {
         userId: user._id as any, 
         code: code.trim()
       });
-      Alert.alert('Sukses', `Absensi berhasil! Anda mendapatkan ${result.points} poin.`);
-      setCode('');
-      setModalVisible(false);
+
+      if (result.success) {
+        Alert.alert('Sukses', result.message || `Absensi berhasil! Anda mendapatkan ${result.points} poin.`);
+        setCode('');
+        setModalVisible(false);
+      } else {
+        // Jika backend mengirim success: false (kode salah), tampilkan pesan tanpa error merah di terminal
+        Alert.alert('Gagal', result.message || 'Gagal melakukan absensi');
+      }
     } catch (error: any) {
-      Alert.alert('Gagal', error.message || 'Gagal melakukan absensi');
+      // Catch tetap ada untuk error jaringan atau error tak terduga lainnya
+      const errorMessage = error.data || error.message || 'Terjadi kesalahan sistem';
+      Alert.alert('Error', errorMessage);
     }
   };
 
