@@ -1,6 +1,10 @@
+// File ini berisi fungsi-fungsi backend Convex untuk kebutuhan administratif.
+// Mencakup pengambilan statistik perpustakaan, pemformatan log aktivitas, dan sinkronisasi poin.
+
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+// Fungsi untuk mendapatkan statistik global (total buku, dipinjam, tersedia, reservasi aktif)
 export const getStats = query({
   handler: async (ctx) => {
     const allBooks = await ctx.db.query("books").collect();
@@ -30,6 +34,7 @@ export const getStats = query({
   },
 });
 
+// Fungsi internal untuk memformat berbagai jenis aktivitas menjadi daftar log yang seragam
 async function formatActivities(ctx: any, borrows: any[], bookRes: any[], roomBookings: any[]) {
   const borrowLogs = await Promise.all(
     borrows.map(async (borrow) => {
@@ -111,6 +116,7 @@ async function formatActivities(ctx: any, borrows: any[], bookRes: any[], roomBo
   return [...borrowLogs, ...reservationLogs, ...roomLogs].sort((a, b) => b.timestamp - a.timestamp);
 }
 
+// Fungsi untuk mendapatkan daftar aktivitas terbaru (limit 15)
 export const getRecentActivities = query({
   handler: async (ctx) => {
     const borrows = await ctx.db.query("borrow").order("desc").take(10);
@@ -122,6 +128,7 @@ export const getRecentActivities = query({
   },
 });
 
+// Fungsi untuk mendapatkan seluruh riwayat aktivitas perpustakaan
 export const getAllActivities = query({
   handler: async (ctx) => {
     const borrows = await ctx.db.query("borrow").order("desc").take(50);
@@ -132,6 +139,7 @@ export const getAllActivities = query({
   },
 });
 
+// Fungsi untuk menyelaraskan poin lama pengguna ke sistem log riwayat poin yang baru
 export const syncLegacyPoints = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
@@ -141,7 +149,6 @@ export const syncLegacyPoints = mutation({
     const currentPoints = user.library_points ?? 0;
     if (currentPoints === 0) return true;
 
-    // Cek apakah sudah pernah sinkronisasi agar tidak double
     const existing = await ctx.db
       .query("pointLogs")
       .withIndex("by_user", (q) => q.eq("id_user", args.userId))
@@ -150,7 +157,6 @@ export const syncLegacyPoints = mutation({
 
     if (existing) throw new Error("Akun ini sudah pernah disinkronisasi.");
 
-    // Masukkan saldo saat ini ke riwayat sebagai "Saldo Awal"
     await ctx.db.insert("pointLogs", {
       id_user: args.userId,
       activity_type: "initial_sync",

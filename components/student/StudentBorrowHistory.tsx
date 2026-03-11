@@ -1,3 +1,6 @@
+// File ini berfungsi untuk menampilkan riwayat peminjaman buku mahasiswa.
+// Mahasiswa dapat melihat daftar buku yang sudah pernah dipinjam dan telah dikembalikan.
+
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import useTheme from '../../hooks/useTheme';
@@ -11,6 +14,7 @@ export function StudentBorrowHistory({ onClose }: { onClose: () => void }) {
   const { colors } = useTheme();
   const { user } = useUser();
 
+  // Mengambil riwayat peminjaman buku yang sudah selesai (dikembalikan)
   const history = useQuery(api.borrow.getBorrowHistory, 
     user ? { userId: user._id } : "skip"
   );

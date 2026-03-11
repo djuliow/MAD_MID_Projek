@@ -1,3 +1,6 @@
+// File ini berfungsi sebagai halaman beranda utama untuk mahasiswa.
+// Menampilkan salam selamat datang, poin perpustakaan, fitur presensi, serta rekomendasi buku terbaru.
+
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import useTheme from '../../hooks/useTheme';
@@ -12,6 +15,7 @@ export function StudentHome() {
   const { colors } = useTheme();
   const { user } = useUser();
 
+  // Mengambil data buku dan informasi pengguna dari Convex
   const books = useQuery(api.books.getBooks, {});
   const latestBooks = useQuery(api.books.getLatestBooks, { limit: 5 });
   const userData = useQuery(api.users.getUserById, { id: user?._id as any });
@@ -55,10 +59,12 @@ export function StudentHome() {
           </View>
         </View>
 
+        {/* Fitur absen harian untuk mendapatkan poin */}
         <StudentAttendanceCheckIn />
 
         {books.length > 0 ? (
           <>
+            {/* Bagian Rekomendasi Buku (Horizontal) */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>Recommended Books</Text>
@@ -73,6 +79,7 @@ export function StudentHome() {
               </ScrollView>
             </View>
 
+            {/* Bagian Buku Terbaru (Vertical/Horizontal Cards) */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>New Books</Text>

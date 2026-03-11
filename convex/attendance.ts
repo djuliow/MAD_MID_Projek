@@ -1,7 +1,6 @@
-/**
- * Attendance and Point History Module
- * Last Updated: 2026-03-11
- */
+// File ini mengelola logika backend untuk sistem absensi dan riwayat poin.
+// Mencakup pembuatan kode harian oleh admin, pengiriman kode oleh mahasiswa, dan pelaporan absensi.
+
 import { mutation, query } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 
@@ -19,8 +18,9 @@ function getTodayDate() {
   return formatter.format(new Date());
 }
 
-// --- ADMIN FUNCTIONS ---
+// --- FUNGSI UNTUK ADMIN ---
 
+// Membuat kode absensi baru untuk hari ini
 export const createDailyCode = mutation({
   args: {
     code: v.string(),
@@ -47,6 +47,7 @@ export const createDailyCode = mutation({
   },
 });
 
+// Mendapatkan kode absensi yang aktif hari ini
 export const getDailyCode = query({
   handler: async (ctx) => {
     const today = getTodayDate();
@@ -57,8 +58,9 @@ export const getDailyCode = query({
   },
 });
 
-// --- STUDENT FUNCTIONS ---
+// --- FUNGSI UNTUK MAHASISWA ---
 
+// Proses check-in mahasiswa menggunakan kode harian
 export const submitDailyCode = mutation({
   args: {
     userId: v.id("users"),
@@ -86,14 +88,14 @@ export const submitDailyCode = mutation({
       return { success: false, message: "Anda sudah absen hari ini." };
     }
 
-    // 1. Catat Kehadiran
+    // 1. Catat Kehadiran ke tabel attendance
     await ctx.db.insert("attendance", {
       id_user: args.userId,
       date: today,
       points_earned: dailyCode.points_value,
     });
 
-    // 2. Update Poin User
+    // 2. Tambahkan poin ke saldo User
     const user = await ctx.db.get(args.userId);
     if (!user) return { success: false, message: "User tidak ditemukan." };
     
@@ -101,7 +103,7 @@ export const submitDailyCode = mutation({
       library_points: (user.library_points ?? 0) + dailyCode.points_value,
     });
 
-    // 3. Catat ke Point History (LOGS)
+    // 3. Catat rincian transaksi ke riwayat poin (pointLogs)
     await ctx.db.insert("pointLogs", {
       id_user: args.userId,
       activity_type: "attendance",
@@ -114,6 +116,7 @@ export const submitDailyCode = mutation({
   },
 });
 
+// Menukarkan poin untuk kebutuhan tertentu (mengurangi saldo poin)
 export const redeemPoints = mutation({
   args: {
     userId: v.id("users"),
@@ -130,7 +133,6 @@ export const redeemPoints = mutation({
       library_points: currentPoints - args.amountToRedeem,
     });
 
-    // Catat ke Point History (LOGS)
     await ctx.db.insert("pointLogs", {
       id_user: args.userId,
       activity_type: "redeem",
@@ -143,7 +145,7 @@ export const redeemPoints = mutation({
   },
 });
 
-
+// Mendapatkan seluruh riwayat poin milik satu user
 export const getUserPointHistory = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
@@ -155,6 +157,7 @@ export const getUserPointHistory = query({
   },
 });
 
+// Mendapatkan riwayat kehadiran/absensi milik satu user
 export const getAttendanceHistory = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
@@ -166,6 +169,7 @@ export const getAttendanceHistory = query({
   },
 });
 
+// Mendapatkan daftar seluruh absensi hari ini (untuk dashboard admin)
 export const getAllAttendance = query({
   handler: async (ctx) => {
     const today = getTodayDate();
@@ -189,6 +193,7 @@ export const getAllAttendance = query({
   },
 });
 
+// Mencari data absensi berdasarkan rentang tanggal
 export const getAttendanceByRange = query({
   args: { startDate: v.string(), endDate: v.string() },
   handler: async (ctx, args) => {

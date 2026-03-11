@@ -1,3 +1,6 @@
+// File ini menampilkan detail lengkap dari sebuah buku berdasarkan ID-nya.
+// Pengguna dapat melihat informasi buku, status ketersediaan, dan melakukan reservasi buku.
+
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -17,6 +20,7 @@ export default function BookDetailScreen() {
   const [isReserving, setIsReserving] = useState(false);
   const [reservationType, setReservationType] = useState<'in_library' | 'take_home'>('take_home');
 
+  // Mengambil data buku berdasarkan ID dari database Convex
   const book = useQuery(api.books.getBookById, { id: id as Id<"books"> });
   const reserveBook = useMutation(api.reservation.reserveBook);
 
@@ -39,6 +43,7 @@ export default function BookDetailScreen() {
     );
   }
 
+  // Fungsi untuk menangani proses reservasi buku
   const handleReserve = async () => {
     if (!user) {
       Alert.alert("Login Required", "Please login as a student to reserve books.");
@@ -110,7 +115,7 @@ export default function BookDetailScreen() {
             </View>
           </View>
 
-          {/* Moved: Reservation Type Selector (Now at Top) */}
+          {/* Pemilih tipe reservasi: Baca di perpustakaan atau bawa pulang */}
           {!isComingSoon && (
             <View style={styles.typeSection}>
               <Text style={[styles.typeHeader, { color: colors.text }]}>How will you read this?</Text>

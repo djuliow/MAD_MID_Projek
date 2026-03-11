@@ -1,3 +1,6 @@
+// File ini berfungsi sebagai dashboard utama untuk admin (pustakawan).
+// Menampilkan ringkasan statistik, manajemen absensi, log pengunjung, status ruangan real-time, dan aktivitas terbaru.
+
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, Modal } from 'react-native';
 import useTheme from '../../hooks/useTheme';
@@ -15,6 +18,7 @@ export function AdminDashboard() {
   const { userName } = useUser();
   const [isHistoryVisible, setHistoryVisible] = useState(false);
 
+  // Mengambil statistik global dan aktivitas terbaru dari Convex
   const stats = useQuery(api.admin.getStats, {});
   const activities = useQuery(api.admin.getRecentActivities, {});
 
@@ -39,6 +43,7 @@ export function AdminDashboard() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+        {/* Grid statistik untuk ringkasan cepat data perpustakaan */}
         <View style={styles.statsGrid}>
           <StatCard title="Total Books" value={stats.totalBooks} icon="book-outline" color="#461691" />
           <StatCard title="Borrowed" value={stats.borrowedBooks} icon="swap-horizontal-outline" color="#f59e0b" />
@@ -52,6 +57,7 @@ export function AdminDashboard() {
 
         <AdminRoomLiveStatus />
 
+        {/* Section untuk menampilkan aktivitas transaksi terbaru */}
         <View style={[styles.section, { paddingBottom: 40 }]}>
           <View style={styles.sectionHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -80,11 +86,11 @@ export function AdminDashboard() {
                   bgColor = colors.success + '20';
                 } else if (activity.action === 'Reserved') {
                   iconName = 'bookmark-outline';
-                  iconColor = '#3b82f6'; // Biru untuk reservasi
+                  iconColor = '#3b82f6';
                   bgColor = '#3b82f620';
                 } else if (activity.action === 'Room Booked') {
                   iconName = 'business-outline';
-                  iconColor = '#8b5cf6'; // Ungu untuk booking ruangan
+                  iconColor = '#8b5cf6';
                   bgColor = '#8b5cf620';
                 } else if (activity.action === 'Room Finished') {
                   iconName = 'checkmark-done-outline';
@@ -131,6 +137,7 @@ export function AdminDashboard() {
   );
 }
 
+// Sub-komponen untuk menampilkan kartu statistik individu
 function StatCard({ title, value, icon, color }: { title: string, value: number, icon: any, color: string }) {
   const { colors } = useTheme();
   return (

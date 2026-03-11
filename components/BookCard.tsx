@@ -1,3 +1,7 @@
+// File ini adalah komponen kartu buku yang dapat digunakan kembali.
+// Mendukung tampilan vertikal (untuk daftar grid/horizontal) dan tampilan horizontal (untuk daftar baris).
+// Menampilkan informasi buku seperti judul, penulis, status, dan fitur favorit.
+
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
@@ -19,12 +23,14 @@ export default function BookCard({ book, horizontal = false }: BookCardProps) {
   const { user } = useUser();
   const router = useRouter();
 
+  // Mengecek apakah buku ini ada dalam daftar favorit pengguna
   const isFav = useQuery(api.favorites.isFavorite, { 
     userId: user?._id as any, 
     bookId: book._id 
   });
   const toggleFav = useMutation(api.favorites.toggleFavorite);
 
+  // Fungsi untuk menambah atau menghapus dari favorit
   const handleToggleFavorite = (e: any) => {
     e.stopPropagation();
     if (user?._id) {
@@ -32,6 +38,7 @@ export default function BookCard({ book, horizontal = false }: BookCardProps) {
     }
   };
 
+  // Fungsi untuk berpindah ke layar detail buku
   const handlePress = () => {
     router.push({
       pathname: '/book-detail/[id]',

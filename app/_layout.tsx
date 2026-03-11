@@ -1,3 +1,7 @@
+// File ini berfungsi sebagai tata letak utama aplikasi (Root Layout).
+// Mengatur provider global untuk Convex, data pengguna (UserProvider), dan tema (ThemeProvider),
+// serta mendefinisikan navigasi utama menggunakan Stack.
+
 import { ThemeProvider } from "../hooks/useTheme";
 import { UserProvider } from "../hooks/useUser";
 import { Stack } from "expo-router";

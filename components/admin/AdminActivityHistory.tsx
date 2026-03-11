@@ -1,3 +1,6 @@
+// File ini menampilkan riwayat lengkap aktivitas perpustakaan untuk admin.
+// Mencakup data peminjaman, pengembalian, reservasi buku, dan pemesanan ruangan.
+
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import { useQuery } from 'convex/react';
@@ -11,8 +14,10 @@ interface AdminActivityHistoryProps {
 
 export function AdminActivityHistory({ onClose }: AdminActivityHistoryProps) {
   const { colors } = useTheme();
+  // Mengambil semua data aktivitas dari backend Convex
   const activities = useQuery(api.admin.getAllActivities);
 
+  // Merender setiap item aktivitas dengan ikon dan warna yang sesuai dengan jenis aksi
   const renderItem = ({ item }: { item: any }) => {
     let iconName: any = 'swap-horizontal-outline';
     let iconColor = colors.primary;

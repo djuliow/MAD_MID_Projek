@@ -1,3 +1,7 @@
+// File ini menampilkan daftar singkat log pengunjung (absensi) hari ini untuk admin.
+// Menampilkan nama mahasiswa, ID, tanggal kunjungan, dan poin yang diperoleh.
+// Juga menyediakan akses ke laporan pengunjung yang lebih detail.
+
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Modal } from 'react-native';
 import { useQuery } from 'convex/react';
@@ -9,8 +13,10 @@ import { AdminVisitorReports } from './AdminVisitorReports';
 const AdminVisitorLogs = () => {
   const { colors } = useTheme();
   const [isReportVisible, setReportVisible] = useState(false);
+  // Mengambil data absensi mahasiswa hari ini
   const visitorLogs = useQuery(api.attendance.getAllAttendance);
 
+  // Merender setiap item log pengunjung
   const renderItem = ({ item }: { item: any }) => {
     const formattedDate = new Date(item.date).toLocaleDateString('id-ID', {
       day: 'numeric',

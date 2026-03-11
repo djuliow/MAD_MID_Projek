@@ -1,15 +1,17 @@
 import { mutation, query } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 
+// Fungsi untuk membuat pengguna baru
 export const createUser = mutation({
   args: {
-    name: v.string(),
-    email: v.string(),
-    password: v.string(),
-    role: v.union(v.literal("student"), v.literal("librarian")),
-    student_id: v.optional(v.string()),
+    name: v.string(), // Nama lengkap
+    email: v.string(), // Email pengguna
+    password: v.string(), // Password pengguna
+    role: v.union(v.literal("student"), v.literal("librarian")), // Peran pengguna
+    student_id: v.optional(v.string()), // NIM (jika mahasiswa)
   },
   handler: async (ctx, args) => {
+    // Mengecek apakah email sudah terdaftar
     const existing = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
@@ -17,6 +19,7 @@ export const createUser = mutation({
     if (existing) {
       throw new ConvexError("User already exists");
     }
+    // Menyimpan data pengguna baru ke tabel users
     return await ctx.db.insert("users", {
       ...args,
       created_at: Date.now(),
@@ -24,6 +27,7 @@ export const createUser = mutation({
   },
 });
 
+// Fungsi untuk mengambil data pengguna berdasarkan ID
 export const getUserById = query({
   args: { id: v.id("users") },
   handler: async (ctx, args) => {
@@ -31,6 +35,7 @@ export const getUserById = query({
   },
 });
 
+// Fungsi untuk mencari pengguna berdasarkan alamat email
 export const getUserByEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
@@ -41,17 +46,20 @@ export const getUserByEmail = query({
   },
 });
 
+// Fungsi untuk proses autentikasi login pengguna
 export const login = query({
   args: {
     email: v.string(),
     password: v.string(),
   },
   handler: async (ctx, args) => {
+    // Mencari pengguna berdasarkan email
     const user = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .unique();
 
+    // Validasi email dan kecocokan password
     if (!user || user.password !== args.password) {
       throw new ConvexError("Email atau password salah.");
     }
@@ -60,7 +68,7 @@ export const login = query({
   },
 });
 
-
+// Fungsi untuk mengambil semua daftar pengguna yang berperan sebagai mahasiswa
 export const getStudents = query({
   handler: async (ctx) => {
     return await ctx.db
@@ -70,6 +78,7 @@ export const getStudents = query({
   },
 });
 
+// Fungsi untuk menghapus data pengguna berdasarkan ID
 export const deleteUser = mutation({
   args: { id: v.id("users") },
   handler: async (ctx, args) => {

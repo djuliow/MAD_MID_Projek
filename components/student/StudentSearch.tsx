@@ -1,3 +1,6 @@
+// File ini berfungsi untuk fitur pencarian buku oleh mahasiswa.
+// Mahasiswa dapat mencari buku berdasarkan judul, penulis, atau kategori yang diinginkan.
+
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import useTheme from '../../hooks/useTheme';
@@ -10,6 +13,7 @@ export function StudentSearch() {
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Mengambil daftar semua buku dari Convex
   const books = useQuery(api.books.getBooks, {});
 
   if (books === undefined) {
@@ -20,6 +24,7 @@ export function StudentSearch() {
     );
   }
 
+  // Melakukan penyaringan buku berdasarkan query pencarian yang dimasukkan user
   const filteredBooks = books.filter(book => 
     book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||

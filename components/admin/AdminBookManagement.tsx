@@ -1,3 +1,6 @@
+// File ini berfungsi untuk manajemen aset perpustakaan oleh admin.
+// Mencakup penambahan, pengeditan, dan pencarian data buku serta ruangan belajar.
+
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, SafeAreaView, ActivityIndicator, Modal, ScrollView, Alert, Switch } from 'react-native';
 import useTheme from '../../hooks/useTheme';
@@ -54,6 +57,7 @@ export function AdminBookManagement() {
     room.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Fungsi untuk mengisi form dengan data buku yang akan diedit
   const handleOpenEditBook = (book: any) => {
     setMode('books');
     setEditingId(book._id);
@@ -71,6 +75,7 @@ export function AdminBookManagement() {
     setModalVisible(true);
   };
 
+  // Fungsi untuk mengisi form dengan data ruangan yang akan diedit
   const handleOpenEditRoom = (room: any) => {
     setMode('rooms');
     setEditingId(room._id);
@@ -81,6 +86,7 @@ export function AdminBookManagement() {
     setModalVisible(true);
   };
 
+  // Fungsi untuk menyimpan perubahan atau menambah data baru
   const handleSave = async () => {
     setLoading(true);
     try {
@@ -177,7 +183,7 @@ export function AdminBookManagement() {
       </View>
 
       <FlatList
-        data={mode === 'books' ? filteredBooks : filteredRooms}
+        data={(mode === 'books' ? filteredBooks : filteredRooms) as any[]}
         keyExtractor={item => item._id}
         renderItem={({ item }) => (
           mode === 'books' ? (

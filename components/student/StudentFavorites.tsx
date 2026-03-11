@@ -1,3 +1,6 @@
+// File ini berfungsi untuk menampilkan daftar buku favorit mahasiswa.
+// Mahasiswa dapat melihat buku-buku yang telah mereka tandai sebagai favorit sebelumnya.
+
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import { useQuery } from 'convex/react';
@@ -14,6 +17,7 @@ interface StudentFavoritesProps {
 export function StudentFavorites({ onClose }: StudentFavoritesProps) {
   const { colors } = useTheme();
   const { user } = useUser();
+  // Mengambil daftar buku favorit berdasarkan ID user yang sedang login
   const favorites = useQuery(api.favorites.getFavoritesByUser, { userId: user?._id as any });
 
   return (

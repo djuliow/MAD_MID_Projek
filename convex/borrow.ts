@@ -1,14 +1,17 @@
 import { mutation, query } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 
+// Fungsi untuk mendapatkan daftar buku yang sedang dipinjam oleh pengguna tertentu
 export const getBorrowedBooksByUser = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
+    // Mencari data peminjaman di tabel 'borrow' berdasarkan ID pengguna
     const borrows = await ctx.db
       .query("borrow")
       .withIndex("by_user", (q) => q.eq("id_user", args.userId))
       .collect();
 
+    // Menggabungkan data peminjaman dengan informasi salinan buku dan detail bukunya
     return await Promise.all(
       borrows.map(async (borrow) => {
         const copy = await ctx.db.get(borrow.id_copy);
@@ -23,8 +26,10 @@ export const getBorrowedBooksByUser = query({
   },
 });
 
+// Fungsi untuk mendapatkan semua data peminjaman aktif di perpustakaan (untuk admin)
 export const getAllBorrows = query({
   handler: async (ctx) => {
+    // Mengambil semua data peminjaman diurutkan dari yang terbaru
     const borrows = await ctx.db.query("borrow").order("desc").collect();
 
     const results = await Promise.all(
@@ -42,10 +47,12 @@ export const getAllBorrows = query({
       })
     );
 
+    // Memfilter hanya peminjaman yang statusnya 'borrowed' (dipinjam) atau 'late' (terlambat)
     return results.filter(r => r.status === 'borrowed' || r.status === 'late');
   },
 });
 
+// Fungsi untuk mendapatkan riwayat buku yang sudah pernah dikembalikan oleh pengguna
 export const getBorrowHistory = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
@@ -59,7 +66,7 @@ export const getBorrowHistory = query({
     return await Promise.all(
       history.map(async (item) => {
         const copy = await ctx.db.get(item.id_copy);
-        const book = copy ? await ctx.db.get(item.id_book) : null;
+        const book = copy ? await ctx.db.get(copy.id_book) : null;
         return {
           ...item,
           book,
@@ -69,21 +76,23 @@ export const getBorrowHistory = query({
   },
 });
 
+// Fungsi untuk melakukan transaksi peminjaman buku
 export const borrowBook = mutation({
   args: {
-    userId: v.id("users"),
-    copyId: v.id("bookCopies"),
-    dueDate: v.number(),
-    type: v.union(v.literal("in_library"), v.literal("take_home")),
+    userId: v.id("users"), // ID peminjam
+    copyId: v.id("bookCopies"), // ID eksemplar fisik buku
+    dueDate: v.number(), // Batas waktu pengembalian
+    type: v.union(v.literal("in_library"), v.literal("take_home")), // Tipe: baca di tempat atau bawa pulang
   },
   handler: async (ctx, args) => {
+    // Validasi ketersediaan eksemplar buku
     const copy = await ctx.db.get(args.copyId);
     if (!copy || copy.status !== "available") throw new ConvexError("Buku tidak tersedia.");
 
     const book = await ctx.db.get(copy.id_book);
     if (!book || book.available_copies <= 0) throw new ConvexError("Stok buku habis.");
 
-    // 1. Create borrow record
+    // 1. Membuat data peminjaman baru
     const borrowId = await ctx.db.insert("borrow", {
       id_user: args.userId,
       id_copy: args.copyId,
@@ -93,19 +102,19 @@ export const borrowBook = mutation({
       type: args.type,
     });
 
-    // 2. Update statuses
+    // 2. Memperbarui status eksemplar buku dan jumlah stok buku yang tersedia
     await ctx.db.patch(args.copyId, { status: "borrowed" });
     await ctx.db.patch(book._id, { available_copies: book.available_copies - 1 });
 
-    // 3. Reward Points
-    const reward = args.type === 'in_library' ? 20 : 5;
+    // 3. Memberikan poin hadiah kepada pengguna
+    const reward = args.type === 'in_library' ? 20 : 5; // Lebih banyak poin jika membaca di perpustakaan
     const user = await ctx.db.get(args.userId);
     if (user) {
       await ctx.db.patch(args.userId, {
         library_points: (user.library_points ?? 0) + reward,
       });
 
-      // LOG POINT HISTORY
+      // Mencatat riwayat perolehan poin
       await ctx.db.insert("pointLogs", {
         id_user: args.userId,
         activity_type: "borrow",
@@ -115,7 +124,7 @@ export const borrowBook = mutation({
       });
     }
 
-    // 4. Notification
+    // 4. Mengirimkan notifikasi keberhasilan peminjaman
     await ctx.db.insert("notification", {
       id_user: args.userId,
       title: "Pinjam Berhasil!",
@@ -128,9 +137,11 @@ export const borrowBook = mutation({
   },
 });
 
+// Fungsi untuk memproses pengembalian buku
 export const returnBook = mutation({
   args: { borrowId: v.id("borrow") },
   handler: async (ctx, args) => {
+    // Mengambil data peminjaman
     const borrow = await ctx.db.get(args.borrowId);
     if (!borrow || borrow.status === "returned") throw new ConvexError("Data peminjaman tidak valid.");
 
@@ -139,35 +150,34 @@ export const returnBook = mutation({
     if (!book) throw new ConvexError("Buku tidak ditemukan.");
 
     const now = Date.now();
-    const isLate = now > borrow.due_date;
+    const isLate = now > borrow.due_date; // Cek apakah terlambat
 
-    // 1. Update borrow & copy
+    // 1. Update status peminjaman dan kembalikan status eksemplar menjadi tersedia
     await ctx.db.patch(args.borrowId, { return_date: now, status: "returned", updated_at: now });
     if (copy) await ctx.db.patch(copy._id, { status: "available" });
 
-    // 2. Update book stock
+    // 2. Menambah kembali jumlah stok buku yang tersedia
     await ctx.db.patch(book._id, { available_copies: Math.min(book.available_copies + 1, book.total_copies) });
 
-    // 3. Points Logic
+    // 3. Logika poin (bonus tepat waktu atau denda keterlambatan)
     const user = await ctx.db.get(borrow.id_user);
     if (user) {
       let pointsChange = 0;
       let msg = "";
       
-      const borrowType = borrow.type; // Bisa 'in_library', 'take_home', atau undefined
+      const borrowType = borrow.type;
 
       if (borrowType === 'take_home') {
-        // HANYA tipe bawa pulang yang ada denda atau bonus balik tepat waktu
+        // Hanya tipe bawa pulang yang memiliki konsekuensi poin saat pengembalian
         if (!isLate) {
-          pointsChange = 5;
+          pointsChange = 5; // Bonus jika tepat waktu
           msg = `Tepat waktu memulangkan "${book.title}" (Bawa Pulang). Bonus: +5 Poin.`;
         } else {
-          pointsChange = -25;
+          pointsChange = -25; // Denda jika terlambat
           msg = `Terlambat memulangkan "${book.title}" (Bawa Pulang). Penalty: -25 Poin.`;
         }
       } else {
-        // Tipe 'in_library' atau data lama tanpa tipe: 
-        // Tidak ada poin tambahan saat balik, dan tidak ada denda.
+        // Tipe baca di tempat tidak ada poin tambahan/denda saat pengembalian
         pointsChange = 0;
         msg = `Memulangkan "${book.title}"${borrowType === 'in_library' ? " (Baca di Perpus)" : ""}.`;
       }
@@ -178,7 +188,7 @@ export const returnBook = mutation({
           library_points: newPoints,
         });
 
-        // LOG POINT HISTORY
+        // Mencatat transaksi poin ke log
         await ctx.db.insert("pointLogs", {
           id_user: user._id,
           activity_type: pointsChange < 0 ? "penalty" : "return",
@@ -188,6 +198,7 @@ export const returnBook = mutation({
         });
       }
 
+      // Kirim notifikasi status pengembalian
       await ctx.db.insert("notification", {
         id_user: user._id,
         title: pointsChange < 0 ? "Penalty Poin!" : "Informasi Poin",
@@ -200,4 +211,3 @@ export const returnBook = mutation({
     return true;
   },
 });
-

@@ -1,3 +1,6 @@
+// File ini berfungsi untuk mengelola kode absensi harian bagi mahasiswa.
+// Admin dapat membuat satu kode unik per hari yang memberikan sejumlah poin kepada mahasiswa yang melakukan check-in.
+
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Keyboard, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { useMutation, useQuery } from 'convex/react';
@@ -15,11 +18,13 @@ const AdminAttendanceCode = () => {
   const createCode = useMutation(api.attendance.createDailyCode);
   const currentCode = useQuery(api.attendance.getDailyCode);
 
+  // Fungsi untuk membuka/menutup panel dropdown
   const toggleExpand = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsExpanded(!isExpanded);
   };
 
+  // Fungsi untuk menyimpan kode absensi baru ke database
   const handleCreateCode = async () => {
     if (!code.trim()) {
       Alert.alert('Input Kosong', 'Silakan tentukan kode unik.');

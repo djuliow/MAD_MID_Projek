@@ -1,6 +1,10 @@
+// File ini berisi fungsi-fungsi backend untuk inisialisasi dan perbaikan data awal.
+// Digunakan untuk membuat akun admin pertama kali dan memperbaiki salinan buku yang hilang.
+
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 
+// Membuat akun admin (pustakawan) secara otomatis jika belum ada di database
 export const seedAdmin = mutation({
   handler: async (ctx) => {
     const existing = await ctx.db
@@ -13,7 +17,7 @@ export const seedAdmin = mutation({
     await ctx.db.insert("users", {
       name: "Administrator Perpus",
       email: "admin@unklab.ac.id",
-      password: "admin123", // Password awal
+      password: "admin123", // Password awal untuk login admin
       role: "librarian",
       created_at: Date.now(),
     });
@@ -22,6 +26,7 @@ export const seedAdmin = mutation({
   },
 });
 
+// Menambahkan salinan buku (bookCopies) secara otomatis jika data salinan tidak sesuai dengan total_copies pada data buku
 export const fixMissingCopies = mutation({
   handler: async (ctx) => {
     const allBooks = await ctx.db.query("books").collect();

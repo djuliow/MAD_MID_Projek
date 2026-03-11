@@ -1,3 +1,6 @@
+// File ini berfungsi untuk fitur presensi (check-in) mahasiswa di perpustakaan.
+// Mahasiswa dapat memasukkan kode harian yang diberikan pustakawan untuk mendapatkan poin perpustakaan.
+
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Modal } from 'react-native';
 import { useMutation, useQuery } from 'convex/react';
@@ -10,13 +13,13 @@ const StudentAttendanceCheckIn = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const submitCode = useMutation(api.attendance.submitDailyCode);
   
-  // Pastikan query hanya berjalan jika user._id sudah ada (menggunakan "skip")
+  // Mengambil riwayat absensi user untuk mengecek apakah sudah absen hari ini
   const history = useQuery(
     api.attendance.getAttendanceHistory, 
     user?._id ? { userId: user._id as any } : "skip"
   );
   
-  // Cara yang lebih aman untuk mendapatkan tanggal hari ini dalam WITA
+  // Fungsi pembantu untuk mendapatkan tanggal hari ini dalam format YYYY-MM-DD (WITA)
   const getTodayWITA = () => {
     const now = new Date();
     const witaDate = new Date(now.getTime() + (8 * 60 * 60 * 1000));
@@ -26,6 +29,7 @@ const StudentAttendanceCheckIn = () => {
   const today = getTodayWITA();
   const alreadyCheckedIn = history?.some((h: any) => h.date === today);
 
+  // Fungsi untuk mengirim kode absensi ke server
   const handleSubmit = async () => {
     if (!user?._id) {
       Alert.alert('Error', 'Data user belum siap');
@@ -47,11 +51,9 @@ const StudentAttendanceCheckIn = () => {
         setCode('');
         setModalVisible(false);
       } else {
-        // Jika backend mengirim success: false (kode salah), tampilkan pesan tanpa error merah di terminal
         Alert.alert('Gagal', result.message || 'Gagal melakukan absensi');
       }
     } catch (error: any) {
-      // Catch tetap ada untuk error jaringan atau error tak terduga lainnya
       const errorMessage = error.data || error.message || 'Terjadi kesalahan sistem';
       Alert.alert('Error', errorMessage);
     }

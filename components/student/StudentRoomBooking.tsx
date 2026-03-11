@@ -1,3 +1,6 @@
+// File ini berfungsi untuk fitur pemesanan ruangan diskusi oleh mahasiswa.
+// Mahasiswa dapat melihat daftar ruangan, status ketersediaan real-time, dan melakukan booking pada jam tertentu.
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import useTheme from '../../hooks/useTheme';
@@ -6,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
-// Sub-komponen untuk menampilkan jam yang sudah terisi
+// Sub-komponen untuk menampilkan jam-jam yang sudah dipesan hari ini pada suatu ruangan
 function OccupiedSlots({ roomId }: { roomId: any }) {
   const { colors } = useTheme();
   const occupied = useQuery(api.rooms.getActiveBookingsToday, { roomId });
@@ -41,7 +44,7 @@ export function StudentRoomBooking() {
   const [loading, setLoading] = useState(false);
   const [now, setNow] = useState(Date.now());
 
-  // Update waktu setiap menit untuk akurasi status real-time
+  // Memperbarui waktu setiap menit untuk memastikan status ketersediaan ruangan akurat secara real-time
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 60000);
     return () => clearInterval(timer);
@@ -52,11 +55,13 @@ export function StudentRoomBooking() {
 
   const bookRoom = useMutation(api.rooms.bookRoom);
 
+  // Membuka modal pemesanan untuk ruangan tertentu
   const handleOpenBooking = (room: any) => {
     setSelectedRoom(room);
     setModalVisible(true);
   };
 
+  // Fungsi untuk memvalidasi jam dan mengirim pesanan ruangan ke Convex
   const handleConfirmBooking = async () => {
     if (!user?._id || !selectedRoom) return;
 
@@ -116,7 +121,7 @@ export function StudentRoomBooking() {
         renderItem={({ item }) => {
           const facilities = item.facilities.split(',').map(f => f.trim());
           
-          // Logika mengecek apakah saat ini (now) ruangan sedang dipakai
+          // Mengecek apakah saat ini ruangan sedang dipakai berdasarkan jadwal yang aktif
           const isCurrentlyOccupied = allBookings.some(b => 
             b.id_room === item._id && 
             b.status === 'active' &&

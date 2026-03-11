@@ -1,3 +1,6 @@
+// File ini berfungsi sebagai sistem manajemen tema aplikasi (Theme Engine).
+// Menyediakan skema warna untuk mode terang dan gelap serta fungsi untuk mengganti tema secara global.
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
@@ -29,6 +32,7 @@ export interface ColorScheme{
     statusBarStyle: "light-content" | "dark-content";
 }
 
+// Definisi palet warna untuk mode terang
 const lightColors: ColorScheme = {
     bg: "#fcfaff",
     surface: "#ffffff",
@@ -57,6 +61,7 @@ const lightColors: ColorScheme = {
     statusBarStyle: "dark-content" as const,
 };
 
+// Definisi palet warna untuk mode gelap
 const darkColors: ColorScheme = {
     bg: "#0f172a",
     surface: "#1e293b",
@@ -93,11 +98,12 @@ interface ThemeContextType{
 
 const ThemeContext = createContext<undefined | ThemeContextType>(undefined)
 
+// Provider untuk membungkus aplikasi agar bisa mengakses data tema
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     const [isDarkMode, setIsDarkMode] = useState(false);
   
     useEffect(() => {
-      // get the user's choice safely
+      // Memuat preferensi tema pengguna dari penyimpanan lokal (AsyncStorage)
       const loadTheme = async () => {
         try {
           const value = await AsyncStorage.getItem("darkMode");
@@ -111,6 +117,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       loadTheme();
     }, []);
   
+    // Fungsi untuk mengganti tema (toggle) dan menyimpannya ke memori
     const toggleDarkMode = async () => {
       const newMode = !isDarkMode;
       setIsDarkMode(newMode);
@@ -130,6 +137,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
+// Hook kustom untuk mempermudah akses ke data tema di dalam komponen
 const useTheme = () => {
     const context = useContext(ThemeContext)
     if (context == undefined){

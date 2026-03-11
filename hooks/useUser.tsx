@@ -1,3 +1,6 @@
+// File ini mengelola status global pengguna (User Context).
+// Digunakan untuk menyimpan data pengguna yang sedang login dan perannya (Admin atau Siswa).
+
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { Id } from '../convex/_generated/dataModel';
 
@@ -21,6 +24,7 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+// Provider untuk mengelola dan menyediakan data pengguna ke seluruh aplikasi
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole>('student');
@@ -34,6 +38,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// Hook kustom untuk mendapatkan data pengguna secara instan di komponen mana pun
 export const useUser = () => {
   const context = useContext(UserContext);
   if (context === undefined) {

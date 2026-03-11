@@ -1,3 +1,6 @@
+// File ini berfungsi untuk mengelola status reservasi buku dan pemesanan ruangan.
+// Admin dapat mengonfirmasi pengambilan buku (pick up) atau menyelesaikan penggunaan ruangan.
+
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import useTheme from '../../hooks/useTheme';
@@ -9,7 +12,7 @@ export function AdminRoomManagement() {
   const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<'books' | 'rooms'>('books');
 
-  // Queries for both types
+  // Mengambil data pemesanan ruangan dan reservasi buku dari Convex
   const roomBookings = useQuery(api.rooms.getAllBookings, {});
   const bookReservations = useQuery(api.reservation.getAllReservations, {});
   
@@ -33,6 +36,7 @@ export function AdminRoomManagement() {
     });
   };
 
+  // Fungsi untuk memperbarui status pemesanan ruangan (Selesai atau Batal)
   const handleRoomStatusUpdate = async (bookingId: any, roomName: string, status: 'completed' | 'cancelled') => {
     const actionText = status === 'completed' ? 'Selesaikan' : 'Batalkan';
     const confirmText = status === 'completed' ? 'Ya, Selesai' : 'Ya, Batalkan';
@@ -57,6 +61,7 @@ export function AdminRoomManagement() {
     );
   };
 
+  // Fungsi untuk memperbarui status reservasi buku (Diambil atau Kadaluwarsa)
   const handleBookStatusUpdate = async (reservationId: any, status: 'completed' | 'expired') => {
     try {
       if (status === 'completed') {
@@ -85,7 +90,7 @@ export function AdminRoomManagement() {
         <Text style={[styles.title, { color: colors.text }]}>Reservations</Text>
       </View>
 
-      {/* Tab Switcher */}
+      {/* Pengalih Tab antara Reservasi Buku dan Ruangan */}
       <View style={styles.tabContainer}>
         <TouchableOpacity 
           style={[styles.tab, activeTab === 'books' && { borderBottomColor: colors.primary, borderBottomWidth: 3 }]}

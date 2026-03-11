@@ -1,3 +1,6 @@
+// File ini berfungsi untuk menampilkan riwayat poin perpustakaan mahasiswa.
+// Mahasiswa dapat melihat detail perolehan poin (seperti dari absensi) atau pengurangan poin (jika ada pinalti).
+
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import { useQuery } from 'convex/react';
@@ -13,8 +16,10 @@ interface StudentPointHistoryProps {
 export function StudentPointHistory({ onClose }: StudentPointHistoryProps) {
   const { colors } = useTheme();
   const { user } = useUser();
+  // Mengambil log riwayat poin user dari Convex
   const history = useQuery(api.attendance.getUserPointHistory, { userId: user?._id as any });
 
+  // Merender setiap item riwayat poin dengan ikon dan warna (hijau untuk plus, merah untuk minus)
   const renderItem = ({ item }: { item: any }) => {
     const isPositive = item.points > 0;
     const formattedDate = new Date(item.timestamp).toLocaleDateString('id-ID', {

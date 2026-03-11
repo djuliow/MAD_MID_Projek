@@ -1,3 +1,6 @@
+// File ini berfungsi sebagai halaman profil mahasiswa.
+// Mahasiswa dapat mengakses riwayat poin, riwayat peminjaman, daftar buku favorit, mengubah tema aplikasi, dan logout.
+
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Switch, ScrollView, Modal, Alert } from 'react-native';
 import useTheme from '../../hooks/useTheme';
@@ -18,6 +21,7 @@ export function StudentProfile() {
   const [isPointsVisible, setPointsVisible] = useState(false);
   const [isFavVisible, setFavVisible] = useState(false);
 
+  // Fungsi untuk menangani proses logout mahasiswa
   const handleLogout = () => router.replace('/login');
 
   const initial = userName ? userName.charAt(0).toUpperCase() : 'S';
@@ -49,6 +53,7 @@ export function StudentProfile() {
 
         <View style={styles.menuContainer}>
 
+          {/* Menu untuk melihat riwayat perolehan poin */}
           <TouchableOpacity 
             style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => {
@@ -66,6 +71,7 @@ export function StudentProfile() {
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
 
+          {/* Menu untuk melihat riwayat peminjaman buku */}
           <TouchableOpacity 
             style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => {
@@ -83,6 +89,7 @@ export function StudentProfile() {
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
 
+          {/* Menu untuk melihat buku-buku favorit */}
           <TouchableOpacity 
             style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => setFavVisible(true)}
@@ -96,6 +103,7 @@ export function StudentProfile() {
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
 
+          {/* Menu untuk mengganti tema mode gelap/terang */}
           <View style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.menuItemLeft}>
               <View style={[styles.iconBox, { backgroundColor: colors.primary + '15' }]}>
@@ -123,6 +131,7 @@ export function StudentProfile() {
 
       </ScrollView>
 
+      {/* Modal-modal untuk tampilan detail history dan favorit */}
       <Modal 
         visible={isHistoryVisible} 
         animationType="slide"

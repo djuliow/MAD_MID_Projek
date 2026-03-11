@@ -1,3 +1,6 @@
+// File ini mengatur tata letak navigasi tab di bagian bawah aplikasi.
+// Mendefinisikan ikon tab dengan animasi dan menyesuaikan label tab berdasarkan peran pengguna (Admin atau Siswa).
+
 import useTheme from "../../hooks/useTheme"
 import { useUser } from "../../hooks/useUser"
 import { Ionicons } from "@expo/vector-icons"
@@ -6,6 +9,7 @@ import React, { useEffect } from 'react'
 import { View, StyleSheet } from 'react-native'
 import Animated, { useAnimatedStyle, withSpring, useSharedValue } from 'react-native-reanimated'
 
+// Komponen ikon tab dengan animasi saat dipilih (scale dan translateY)
 const TabIcon = ({ name, color, focused }: { name: any, color: string, focused: boolean }) => {
     const translateY = useSharedValue(0);
     const scale = useSharedValue(1);

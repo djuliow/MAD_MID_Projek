@@ -19,48 +19,53 @@ import { Ionicons } from '@expo/vector-icons';
 import { useConvex } from "convex/react";
 import { api } from "../convex/_generated/api";
 
+// Komponen utama untuk layar Login
 export default function LoginScreen() {
   const { colors } = useTheme();
-  const { setRole, setUser } = useUser();
-  const router = useRouter();
-  const convex = useConvex();
+  const { setRole, setUser } = useUser(); // Mengambil fungsi global state untuk data pengguna
+  const router = useRouter(); // Hook untuk navigasi antar layar
+  const convex = useConvex(); // Client Convex untuk memanggil fungsi database
   
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('student');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  // State lokal untuk form login
+  const [email, setEmail] = useState(''); // Menyimpan input email
+  const [password, setPassword] = useState(''); // Menyimpan input password
+  const [selectedRole, setSelectedRole] = useState<UserRole>('student'); // Menyimpan role yang dipilih (student/librarian)
+  const [showPassword, setShowPassword] = useState(false); // Mengatur visibilitas password
+  const [loading, setLoading] = useState(false); // Menandakan proses login sedang berjalan
 
   const primaryColor = '#461691';
 
+  // Fungsi untuk menangani proses login saat tombol ditekan
   const handleLogin = async () => {
+    // Validasi dasar agar input tidak kosong
     if (!email || !password) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
-    setLoading(true);
+    setLoading(true); // Aktifkan loading spinner
     try {
-      // Panggil query login dari Convex menggunakan useConvex client
+      // Memanggil query login dari Convex dengan parameter email dan password
       const userData = await convex.query(api.users.login, { email, password });
       
       if (userData) {
-        // Cek apakah role yang dipilih sesuai dengan role di database
-        // selectedRole di state bisa 'student' atau 'librarian'
+        // Validasi apakah role yang dipilih sesuai dengan role asli pengguna di database
         if (userData.role !== selectedRole) {
-           Alert.alert("Login Error", `You are registered as a ${userData.role}, not a ${selectedRole}.`);
-           setLoading(false);
-           return;
+          Alert.alert("Login Error", `You are registered as a ${userData.role}, not a ${selectedRole}.`);
+          setLoading(false);
+          return;
         }
 
+        // Simpan data pengguna ke global state dan navigasi ke halaman utama
         setUser(userData as any);
         setRole(userData.role as UserRole);
         router.replace('/tabs');
       }
     } catch (error: any) {
+      // Menampilkan pesan error jika login gagal
       Alert.alert("Login Failed", "Invalid email or password. Please contact the library if you haven't received your password.");
     } finally {
-      setLoading(false);
+      setLoading(false); // Matikan loading spinner
     }
   };
 
@@ -75,14 +80,14 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* 1. Library Logo */}
+          {/* Logo Perpustakaan */}
           <View style={styles.logoSection}>
             <View style={[styles.logoCircle, { backgroundColor: primaryColor }]}>
               <Ionicons name="book" size={40} color="#ffffff" />
             </View>
           </View>
 
-          {/* 2. Title & 3. Subtitle */}
+          {/* Judul dan Subjudul */}
           <View style={styles.headerTextSection}>
             <Text style={[styles.title, { color: '#1e1b4b' }]}>Welcome to Campus Library</Text>
             <Text style={[styles.subtitle, { color: '#6b7280' }]}>
@@ -90,7 +95,7 @@ export default function LoginScreen() {
             </Text>
           </View>
 
-          {/* 4. Role Selector */}
+          {/* Selektor Peran (Student atau Librarian) */}
           <View style={styles.roleSelectorContainer}>
             <View style={[styles.segmentedControl, { backgroundColor: '#f3e8ff' }]}>
               <TouchableOpacity 
@@ -123,7 +128,7 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.formContainer}>
-            {/* 5. Email Input Field */}
+            {/* Input Field Email */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Email</Text>
               <View style={styles.inputWrapper}>
@@ -140,7 +145,7 @@ export default function LoginScreen() {
               </View>
             </View>
 
-            {/* 6. Password Input Field */}
+            {/* Input Field Password */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Password</Text>
               <View style={styles.inputWrapper}>
@@ -163,12 +168,12 @@ export default function LoginScreen() {
               </View>
             </View>
 
-            {/* 7. Forgot Password */}
+            {/* Link Lupa Password */}
             <TouchableOpacity style={styles.forgotPasswordContainer}>
               <Text style={[styles.forgotPasswordText, { color: primaryColor }]}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            {/* 8. Login Button */}
+            {/* Tombol Login */}
             <TouchableOpacity 
               style={[styles.loginButton, { backgroundColor: primaryColor }]}
               onPress={handleLogin}
@@ -183,7 +188,7 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* 9. Footer Text */}
+          {/* Footer untuk informasi pendaftaran akun */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Don't have an account? <Text style={{ fontWeight: 'bold', color: primaryColor }}>Contact library administrator.</Text>

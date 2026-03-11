@@ -1,3 +1,6 @@
+// File ini menampilkan profil untuk admin (pustakawan).
+// Mencakup informasi akun, opsi untuk berpindah ke mode gelap, manajemen pengguna mahasiswa, dan fungsi logout.
+
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Switch, Modal } from 'react-native';
 import useTheme from '../../hooks/useTheme';
@@ -12,6 +15,7 @@ export function AdminProfile() {
   const router = useRouter();
   const [isManageUsersVisible, setManageUsersVisible] = useState(false);
 
+  // Fungsi untuk menangani proses keluar (logout)
   const handleLogout = () => router.replace('/login');
 
   const initial = userName ? userName.charAt(0).toUpperCase() : 'A';
@@ -34,7 +38,7 @@ export function AdminProfile() {
       </View>
       
       <View style={styles.menuContainer}>
-        {/* Manage Students Menu Item */}
+        {/* Menu untuk membuka manajemen data mahasiswa */}
         <TouchableOpacity 
           style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => setManageUsersVisible(true)}

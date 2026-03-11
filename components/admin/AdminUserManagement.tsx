@@ -1,3 +1,6 @@
+// File ini berfungsi untuk manajemen akun mahasiswa oleh admin.
+// Admin dapat mendaftarkan akun mahasiswa baru, mencari data mahasiswa, dan menghapus akun mahasiswa.
+
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, SafeAreaView, ActivityIndicator, Modal, Alert } from 'react-native';
 import useTheme from '../../hooks/useTheme';
@@ -10,12 +13,13 @@ export function AdminUserManagement({ onClose }: { onClose: () => void }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalVisible, setModalVisible] = useState(false);
   
-  // Form state
+  // State untuk form input mahasiswa baru
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
 
+  // Queries & Mutations untuk data pengguna di Convex
   const students = useQuery(api.users.getStudents, {});
   const createUser = useMutation(api.users.createUser);
   const deleteUser = useMutation(api.users.deleteUser);
@@ -26,6 +30,7 @@ export function AdminUserManagement({ onClose }: { onClose: () => void }) {
     s.student_id?.includes(searchQuery)
   );
 
+  // Fungsi untuk mendaftarkan mahasiswa baru
   const handleAddStudent = async () => {
     if (!name || !email || !studentId || !password) {
       Alert.alert("Error", "All fields are required");
@@ -48,6 +53,7 @@ export function AdminUserManagement({ onClose }: { onClose: () => void }) {
     }
   };
 
+  // Fungsi untuk menghapus akun mahasiswa
   const handleDelete = (id: any, name: string) => {
     Alert.alert(
       "Delete Student",

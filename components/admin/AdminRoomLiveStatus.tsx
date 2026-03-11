@@ -1,3 +1,7 @@
+// File ini berfungsi untuk memonitor penggunaan ruangan belajar secara real-time.
+// Menampilkan daftar pemakaian yang sedang berlangsung (LIVE) dan jadwal yang akan datang hari ini.
+// Admin dapat menyelesaikan sesi pemakaian ruangan secara manual jika diperlukan.
+
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { useQuery, useMutation } from 'convex/react';
@@ -12,20 +16,21 @@ const AdminRoomLiveStatus = () => {
   const allBookings = useQuery(api.rooms.getAllBookings);
   const updateStatus = useMutation(api.rooms.updateBookingStatus);
 
-  // 1. Ambil yang SEDANG berlangsung
+  // 1. Ambil jadwal yang SEDANG berlangsung saat ini (sesuai rentang waktu start & end)
   const activeNow = allBookings?.filter(b => 
     b.status === 'active' && 
     now >= b.start_time && 
     now < b.end_time
   );
 
-  // 2. Ambil yang AKAN DATANG hari ini
+  // 2. Ambil jadwal yang AKAN DATANG dalam kurun waktu 24 jam ke depan
   const upcomingToday = allBookings?.filter(b => 
     b.status === 'active' && 
     b.start_time > now && 
     b.start_time < (now + 24 * 60 * 60 * 1000)
   );
 
+  // Fungsi untuk mengonfirmasi bahwa pemakaian ruangan telah selesai
   const handleFinish = async (bookingId: any, roomName: string) => {
     Alert.alert(
       "Selesaikan Pemakaian",
@@ -42,6 +47,7 @@ const AdminRoomLiveStatus = () => {
     );
   };
 
+  // Komponen pembantu untuk merender kartu booking (LIVE atau Upcoming)
   const renderBooking = (booking: any, isLive: boolean) => (
     <View key={booking._id} style={[
       styles.liveCard, 

@@ -1,3 +1,6 @@
+// File ini berfungsi sebagai layar Splash (Splash Screen) saat aplikasi pertama kali dibuka.
+// Menampilkan logo aplikasi dan melakukan pengalihan otomatis ke halaman login setelah jeda waktu tertentu.
+
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Image, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -7,6 +10,7 @@ export default function SplashScreen() {
   const { colors } = useTheme();
   const router = useRouter();
 
+  // Efek untuk mengalihkan ke halaman login setelah 2 detik
   useEffect(() => {
     const timer = setTimeout(() => {
       router.replace('/login');

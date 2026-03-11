@@ -1,3 +1,6 @@
+// File ini berfungsi untuk mengelola transaksi peminjaman buku oleh admin.
+// Mencakup pencatatan pinjaman baru untuk mahasiswa dan konfirmasi pengembalian buku.
+
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput, ScrollView } from 'react-native';
 import useTheme from '../../hooks/useTheme';
@@ -12,7 +15,7 @@ export function AdminBorrowManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalVisible, setModalVisible] = useState(false);
   
-  // New Borrow Form State
+  // State untuk form peminjaman baru
   const [selectedStudent, setSelectedStudent] = useState<Doc<"users"> | null>(null);
   const [selectedBook, setSelectedBook] = useState<Doc<"books"> | null>(null);
   const [selectedCopyId, setSelectedCopyId] = useState<Id<"bookCopies"> | null>(null);
@@ -21,6 +24,7 @@ export function AdminBorrowManagement() {
   const [formSearchStudent, setFormSearchStudent] = useState('');
   const [formSearchBook, setFormSearchBook] = useState('');
 
+  // Mengambil data dari backend Convex
   const borrows = useQuery(api.borrow.getAllBorrows, {});
   const students = useQuery(api.users.getStudents, {});
   const books = useQuery(api.books.getBooks, {});
@@ -34,6 +38,7 @@ export function AdminBorrowManagement() {
     b.user?.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Mengecek apakah buku akan segera jatuh tempo (dalam 3 hari)
   const isDueSoon = (dueDateTimestamp: number) => {
     const today = Date.now();
     const diffTime = dueDateTimestamp - today;
@@ -49,6 +54,7 @@ export function AdminBorrowManagement() {
     });
   };
 
+  // Fungsi untuk memproses pengembalian buku
   const handleReturn = async (borrowId: any) => {
     Alert.alert(
       "Confirm Return",
@@ -68,14 +74,13 @@ export function AdminBorrowManagement() {
     );
   };
 
+  // Fungsi untuk membuat entri peminjaman baru
   const handleCreateBorrow = async () => {
     if (!selectedStudent || !selectedCopyId) {
       Alert.alert("Error", "Please select a student and a specific book copy");
       return;
     }
 
-    // If in_library, due date is end of today (approx 12 hours from now)
-    // If take_home, use daysToBorrow
     const duration = loanType === 'in_library' ? 0.5 : (parseInt(daysToBorrow) || 7);
     const dueDate = Date.now() + duration * 24 * 60 * 60 * 1000;
 

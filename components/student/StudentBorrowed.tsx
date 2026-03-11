@@ -1,3 +1,6 @@
+// File ini menampilkan daftar buku yang sedang dipinjam oleh mahasiswa.
+// Mahasiswa dapat melihat detail buku, tanggal peminjaman, dan tanggal jatuh tempo pengembalian.
+
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, SafeAreaView, ActivityIndicator, ScrollView } from 'react-native';
 import useTheme from '../../hooks/useTheme';
@@ -11,14 +14,15 @@ export function StudentBorrowed() {
   const { colors } = useTheme();
   const { user } = useUser();
 
-  // Ambil semua data peminjaman milik user ini
+  // Mengambil data peminjaman buku milik mahasiswa yang sedang login
   const borrowedData = useQuery(api.borrow.getBorrowedBooksByUser, 
     user ? { userId: user._id } : "skip"
   );
 
-  // Filter hanya yang statusnya 'borrowed' (sedang dibawa)
+  // Menyaring hanya buku yang statusnya masih dipinjam (borrowed)
   const activeBorrows = borrowedData?.filter(b => b.status === 'borrowed') || [];
 
+  // Mengecek apakah buku mendekati batas waktu pengembalian (3 hari sebelumnya)
   const isDueSoon = (dueDateTimestamp: number) => {
     const today = Date.now();
     const diffTime = dueDateTimestamp - today;
@@ -105,6 +109,7 @@ export function StudentBorrowed() {
                   </View>
                 </View>
 
+                {/* Banner status peminjaman (Telat, Segera Kembali, atau Aman) */}
                 {isOverdue ? (
                   <View style={[styles.statusBanner, { backgroundColor: colors.danger + '15' }]}>
                     <Ionicons name="alert-circle" size={16} color={colors.danger} />

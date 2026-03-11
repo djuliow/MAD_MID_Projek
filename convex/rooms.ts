@@ -3,12 +3,14 @@ import { v } from "convex/values";
 
 // --- QUERIES ---
 
+// Fungsi untuk mengambil semua daftar ruangan yang tersedia di perpustakaan
 export const getRooms = query({
   handler: async (ctx) => {
     return await ctx.db.query("rooms").collect();
   },
 });
 
+// Fungsi untuk mendapatkan daftar pemesanan ruangan yang aktif pada hari ini
 export const getActiveBookingsToday = query({
   args: { roomId: v.id("rooms") },
   handler: async (ctx, args) => {
@@ -19,7 +21,7 @@ export const getActiveBookingsToday = query({
 
     return await ctx.db
       .query("roomBooking")
-      .withIndex("by_user") // Kita gunakan filter karena index by_room_date belum ada
+      .withIndex("by_user")
       .filter((q) => 
         q.and(
           q.eq(q.field("id_room"), args.roomId),
@@ -32,6 +34,7 @@ export const getActiveBookingsToday = query({
   },
 });
 
+// Fungsi untuk mendapatkan detail informasi satu ruangan berdasarkan ID
 export const getRoomById = query({
   args: { id: v.id("rooms") },
   handler: async (ctx, args) => {
@@ -39,19 +42,23 @@ export const getRoomById = query({
   },
 });
 
+// Fungsi untuk mengambil daftar pemesanan ruangan, bisa difilter berdasarkan pengguna atau ruangan
 export const getRoomBookings = query({
   args: { userId: v.optional(v.id("users")), roomId: v.optional(v.id("rooms")) },
   handler: async (ctx, args) => {
     let bookings;
     if (args.userId) {
+      // Mengambil pemesanan milik pengguna tertentu
       bookings = await ctx.db
         .query("roomBooking")
         .withIndex("by_user", (q) => q.eq("id_user", args.userId!))
         .collect();
     } else {
+      // Mengambil semua pemesanan
       bookings = await ctx.db.query("roomBooking").collect();
     }
 
+    // Menggabungkan data pemesanan dengan detail ruangan dan pengguna
     return await Promise.all(
       bookings.map(async (booking) => {
         const room = await ctx.db.get(booking.id_room);
@@ -66,6 +73,7 @@ export const getRoomBookings = query({
   },
 });
 
+// Fungsi untuk mengambil semua riwayat pemesanan ruangan untuk admin
 export const getAllBookings = query({
   handler: async (ctx) => {
     const bookings = await ctx.db.query("roomBooking").order("desc").collect();
@@ -85,18 +93,20 @@ export const getAllBookings = query({
 
 // --- MUTATIONS ---
 
+// Fungsi untuk menambahkan ruangan baru ke sistem
 export const addRoom = mutation({
   args: {
-    room_name: v.string(),
-    capacity: v.number(),
-    facilities: v.string(),
-    location: v.string(),
+    room_name: v.string(), // Nama ruangan
+    capacity: v.number(), // Kapasitas
+    facilities: v.string(), // Fasilitas
+    location: v.string(), // Lokasi
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("rooms", args);
   },
 });
 
+// Fungsi untuk memperbarui informasi detail ruangan
 export const updateRoom = mutation({
   args: {
     roomId: v.id("rooms"),
@@ -112,16 +122,17 @@ export const updateRoom = mutation({
   },
 });
 
+// Fungsi untuk melakukan pemesanan (booking) ruangan
 export const bookRoom = mutation({
   args: {
-    id_room: v.id("rooms"),
-    id_user: v.id("users"),
-    booking_date: v.number(),
-    start_time: v.number(),
-    end_time: v.number(),
+    id_room: v.id("rooms"), // ID Ruangan
+    id_user: v.id("users"), // ID Pemesan
+    booking_date: v.number(), // Tanggal booking
+    start_time: v.number(), // Jam mulai
+    end_time: v.number(), // Jam selesai
   },
   handler: async (ctx, args) => {
-    // Check for availability overlap
+    // Mengecek apakah ada jadwal yang bentrok di waktu yang sama pada ruangan tersebut
     const existingBookings = await ctx.db
       .query("roomBooking")
       .filter((q) =>
@@ -146,6 +157,7 @@ export const bookRoom = mutation({
       throw new Error("Room is already booked during this time");
     }
 
+    // Memasukkan data booking baru
     return await ctx.db.insert("roomBooking", {
       ...args,
       status: "active",
@@ -153,6 +165,7 @@ export const bookRoom = mutation({
   },
 });
 
+// Fungsi untuk mengubah status pemesanan (misal: membatalkan atau menyelesaikan)
 export const updateBookingStatus = mutation({
   args: {
     bookingId: v.id("roomBooking"),
@@ -161,12 +174,13 @@ export const updateBookingStatus = mutation({
   handler: async (ctx, args) => {
     await ctx.db.patch(args.bookingId, { 
       status: args.status,
-      updated_at: Date.now() // Catat waktu perubahan
+      updated_at: Date.now() // Mencatat waktu perubahan status
     });
     return true;
   },
 });
 
+// Fungsi untuk menghapus data ruangan dari sistem
 export const deleteRoom = mutation({
   args: { id: v.id("rooms") },
   handler: async (ctx, args) => {

@@ -1,3 +1,6 @@
+// File ini berfungsi untuk menampilkan laporan pengunjung berdasarkan rentang tanggal tertentu.
+// Admin dapat memfilter data absensi mahasiswa untuk keperluan pelaporan atau analisis kunjungan perpustakaan.
+
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, TextInput } from 'react-native';
 import { useQuery } from 'convex/react';
@@ -12,13 +15,14 @@ interface AdminVisitorReportsProps {
 export function AdminVisitorReports({ onClose }: AdminVisitorReportsProps) {
   const { colors } = useTheme();
   
-  // Ambil tanggal hari ini (WITA) sebagai default
+  // Mendapatkan tanggal hari ini dalam format YYYY-MM-DD sesuai zona waktu WITA
   const options: Intl.DateTimeFormatOptions = { timeZone: 'Asia/Makassar', year: 'numeric', month: '2-digit', day: '2-digit' };
   const today = new Intl.DateTimeFormat('en-CA', options).format(new Date());
 
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
 
+  // Query untuk mengambil data absensi berdasarkan rentang tanggal yang dipilih
   const logs = useQuery(api.attendance.getAttendanceByRange, { startDate, endDate });
 
   const renderItem = ({ item }: { item: any }) => {
