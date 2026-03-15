@@ -63,7 +63,7 @@ export default function LoginScreen() {
       }
     } catch (error: any) {
       // Menampilkan pesan error jika login gagal
-      Alert.alert("Login Failed", "Invalid email or password. Please contact the library if you haven't received your password.");
+      Alert.alert("Login Failed", "Invalid email or password. If you forgot your password, please contact the library administrator.");
     } finally {
       setLoading(false); // Matikan loading spinner
     }
@@ -168,14 +168,9 @@ export default function LoginScreen() {
               </View>
             </View>
 
-            {/* Link Lupa Password */}
-            <TouchableOpacity style={styles.forgotPasswordContainer}>
-              <Text style={[styles.forgotPasswordText, { color: primaryColor }]}>Forgot Password?</Text>
-            </TouchableOpacity>
-
             {/* Tombol Login */}
             <TouchableOpacity 
-              style={[styles.loginButton, { backgroundColor: primaryColor }]}
+              style={[styles.loginButton, { backgroundColor: primaryColor, marginTop: 20 }]}
               onPress={handleLogin}
               disabled={loading}
               activeOpacity={0.9}
@@ -188,12 +183,14 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Footer untuk informasi pendaftaran akun */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Don't have an account? <Text style={{ fontWeight: 'bold', color: primaryColor }}>Contact library administrator.</Text>
-            </Text>
-          </View>
+          {/* Footer untuk informasi pendaftaran akun - Hanya untuk Mahasiswa */}
+          {selectedRole === 'student' && (
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                Don't have an account? <Text style={{ fontWeight: 'bold', color: primaryColor }}>Contact library administrator.</Text>
+              </Text>
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -292,14 +289,6 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: 4,
-  },
-  forgotPasswordContainer: {
-    alignSelf: 'flex-end',
-    marginBottom: 32,
-  },
-  forgotPasswordText: {
-    fontSize: 14,
-    fontWeight: '600',
   },
   loginButton: {
     height: 56,
