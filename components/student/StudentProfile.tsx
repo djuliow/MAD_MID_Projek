@@ -12,6 +12,7 @@ import { api } from '../../convex/_generated/api';
 import { StudentBorrowHistory } from './StudentBorrowHistory';
 import { StudentPointHistory } from './StudentPointHistory';
 import { StudentFavorites } from './StudentFavorites';
+import { StudentChangePassword } from './StudentChangePassword';
 
 export function StudentProfile() {
   const { colors, isDarkMode, toggleDarkMode } = useTheme();
@@ -20,6 +21,7 @@ export function StudentProfile() {
   const [isHistoryVisible, setHistoryVisible] = useState(false);
   const [isPointsVisible, setPointsVisible] = useState(false);
   const [isFavVisible, setFavVisible] = useState(false);
+  const [isPasswordVisible, setPasswordVisible] = useState(false);
 
   // Fungsi untuk menangani proses logout mahasiswa
   const handleLogout = () => router.replace('/login');
@@ -119,6 +121,20 @@ export function StudentProfile() {
             />
           </View>
 
+          {/* Menu untuk mengubah password */}
+          <TouchableOpacity 
+            style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => setPasswordVisible(true)}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconBox, { backgroundColor: colors.primary + '15' }]}>
+                <Ionicons name="key-outline" size={20} color={colors.primary} />
+              </View>
+              <Text style={[styles.menuText, { color: colors.text }]}>Change Password</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[styles.logoutButton, { borderColor: colors.danger }]}
             onPress={handleLogout}
@@ -154,6 +170,14 @@ export function StudentProfile() {
         onRequestClose={() => setFavVisible(false)}
       >
         <StudentFavorites onClose={() => setFavVisible(false)} />
+      </Modal>
+
+      <Modal 
+        visible={isPasswordVisible} 
+        animationType="slide"
+        onRequestClose={() => setPasswordVisible(false)}
+      >
+        <StudentChangePassword onClose={() => setPasswordVisible(false)} />
       </Modal>
 
     </SafeAreaView>

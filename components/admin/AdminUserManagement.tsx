@@ -13,16 +13,20 @@ export function AdminUserManagement({ onClose }: { onClose: () => void }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalVisible, setModalVisible] = useState(false);
   
-  // State untuk form input mahasiswa baru
+  // State untuk form input mahasiswa baru atau edit
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<any>(null);
 
   // Queries & Mutations untuk data pengguna di Convex
   const students = useQuery(api.users.getStudents, {});
   const createUser = useMutation(api.users.createUser);
   const deleteUser = useMutation(api.users.deleteUser);
+  const updateUser = useMutation(api.users.updateUser);
 
   const filteredStudents = students?.filter(s => 
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -30,27 +34,55 @@ export function AdminUserManagement({ onClose }: { onClose: () => void }) {
     s.student_id?.includes(searchQuery)
   );
 
-  // Fungsi untuk mendaftarkan mahasiswa baru
-  const handleAddStudent = async () => {
-    if (!name || !email || !studentId || !password) {
-      Alert.alert("Error", "All fields are required");
+  // Fungsi untuk mendaftarkan atau mengedit mahasiswa
+  const handleSaveStudent = async () => {
+    if (!name || !email || !studentId || (!isEditMode && !password)) {
+      Alert.alert("Error", "Required fields are missing");
       return;
     }
 
     try {
-      await createUser({
-        name,
-        email,
-        student_id: studentId,
-        password,
-        role: 'student'
-      });
-      Alert.alert("Success", "Student registered successfully");
-      setModalVisible(false);
-      setName(''); setEmail(''); setStudentId(''); setPassword('');
+      if (isEditMode) {
+        await updateUser({
+          id: selectedUserId,
+          name,
+          email,
+          student_id: studentId,
+          password: password || undefined, // Hanya update password jika diisi
+        });
+        Alert.alert("Success", "Student updated successfully");
+      } else {
+        await createUser({
+          name,
+          email,
+          student_id: studentId,
+          password,
+          role: 'student'
+        });
+        Alert.alert("Success", "Student registered successfully");
+      }
+      closeModal();
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to register student");
+      Alert.alert("Error", error.message || "Failed to save student");
     }
+  };
+
+  const openEditModal = (student: any) => {
+    setIsEditMode(true);
+    setSelectedUserId(student._id);
+    setName(student.name);
+    setEmail(student.email);
+    setStudentId(student.student_id || '');
+    setPassword(''); // Kosongkan password saat edit, diisi hanya jika mau reset
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+    setIsEditMode(false);
+    setSelectedUserId(null);
+    setShowPassword(false);
+    setName(''); setEmail(''); setStudentId(''); setPassword('');
   };
 
   // Fungsi untuk menghapus akun mahasiswa
@@ -109,35 +141,64 @@ export function AdminUserManagement({ onClose }: { onClose: () => void }) {
                 <Text style={[styles.userName, { color: colors.text }]}>{item.name}</Text>
                 <Text style={[styles.userMeta, { color: colors.textMuted }]}>{item.student_id} • {item.email}</Text>
               </View>
-              <TouchableOpacity onPress={() => handleDelete(item._id, item.name)}>
-                <Ionicons name="trash-outline" size={20} color={colors.danger} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <TouchableOpacity onPress={() => openEditModal(item)}>
+                  <Ionicons name="create-outline" size={20} color={colors.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDelete(item._id, item.name)}>
+                  <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         )}
         ListEmptyComponent={<Text style={{ textAlign: 'center', color: colors.textMuted, marginTop: 20 }}>No students found</Text>}
       />
 
-      <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary }]} onPress={() => setModalVisible(true)}>
+      <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary }]} onPress={() => {
+        setIsEditMode(false);
+        setModalVisible(true);
+      }}>
         <Ionicons name="person-add" size={24} color="#ffffff" />
       </TouchableOpacity>
 
       <Modal visible={isModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Register New Student</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              {isEditMode ? "Edit Student" : "Register New Student"}
+            </Text>
             
             <TextInput placeholder="Full Name" style={[styles.input, { borderColor: colors.border, color: colors.text }]} value={name} onChangeText={setName} placeholderTextColor={colors.textMuted} />
             <TextInput placeholder="Student ID (NIM)" style={[styles.input, { borderColor: colors.border, color: colors.text }]} value={studentId} onChangeText={setStudentId} placeholderTextColor={colors.textMuted} />
             <TextInput placeholder="Email Campus" style={[styles.input, { borderColor: colors.border, color: colors.text }]} value={email} onChangeText={setEmail} keyboardType="email-address" placeholderTextColor={colors.textMuted} />
-            <TextInput placeholder="Initial Password" style={[styles.input, { borderColor: colors.border, color: colors.text }]} value={password} onChangeText={setPassword} secureTextEntry placeholderTextColor={colors.textMuted} />
+            
+            <View style={[styles.passwordWrapper, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+              <TextInput 
+                placeholder={isEditMode ? "New Password (leave blank to keep)" : "Initial Password"} 
+                style={[styles.passwordInput, { color: colors.text }]} 
+                value={password} 
+                onChangeText={setPassword} 
+                secureTextEntry={!showPassword} 
+                placeholderTextColor={colors.textMuted} 
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                <Ionicons 
+                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                  size={20} 
+                  color={colors.textMuted} 
+                />
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={[styles.btn, { backgroundColor: colors.bg }]} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity style={[styles.btn, { backgroundColor: colors.bg }]} onPress={closeModal}>
                 <Text style={{ color: colors.text }}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.btn, { backgroundColor: colors.primary }]} onPress={handleAddStudent}>
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Register</Text>
+              <TouchableOpacity style={[styles.btn, { backgroundColor: colors.primary }]} onPress={handleSaveStudent}>
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+                  {isEditMode ? "Update" : "Register"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -166,6 +227,21 @@ const styles = StyleSheet.create({
   modalContent: { borderRadius: 24, padding: 24, gap: 16 },
   modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
   input: { height: 50, borderWidth: 1, borderRadius: 12, paddingHorizontal: 16 },
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 50,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+  },
+  passwordInput: {
+    flex: 1,
+    height: '100%',
+  },
+  eyeIcon: {
+    padding: 4,
+  },
   modalButtons: { flexDirection: 'row', gap: 12, marginTop: 8 },
   btn: { flex: 1, height: 50, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
 });

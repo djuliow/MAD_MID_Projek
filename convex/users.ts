@@ -53,18 +53,29 @@ export const login = query({
     password: v.string(),
   },
   handler: async (ctx, args) => {
-    // Mencari pengguna berdasarkan email
+    const normalizedEmail = args.email.toLowerCase().trim();
+    
+    // Mencari pengguna berdasarkan email (case-insensitive)
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .filter((q) => q.eq(q.field("email"), normalizedEmail))
       .unique();
 
+    // Jika tidak ketemu dengan filter manual, coba dengan index (untuk backup)
+    let finalUser = user;
+    if (!finalUser) {
+      finalUser = await ctx.db
+        .query("users")
+        .withIndex("by_email", (q) => q.eq("email", args.email))
+        .unique();
+    }
+
     // Validasi email dan kecocokan password
-    if (!user || user.password !== args.password) {
+    if (!finalUser || finalUser.password !== args.password) {
       throw new ConvexError("Email atau password salah.");
     }
 
-    return user;
+    return finalUser;
   },
 });
 
@@ -83,5 +94,63 @@ export const deleteUser = mutation({
   args: { id: v.id("users") },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
+  },
+});
+
+// Fungsi untuk mengubah password pengguna
+export const changePassword = mutation({
+  args: {
+    userId: v.id("users"),
+    oldPassword: v.string(),
+    newPassword: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new ConvexError("Pengguna tidak ditemukan.");
+    }
+
+    // Verifikasi password lama
+    if (user.password !== args.oldPassword) {
+      throw new ConvexError("Password lama tidak sesuai.");
+    }
+
+    // Update ke password baru
+    await ctx.db.patch(args.userId, {
+      password: args.newPassword,
+    });
+
+    // Ambil data user terbaru untuk dikembalikan ke frontend
+    const updatedUser = await ctx.db.get(args.userId);
+    return updatedUser;
+  },
+});
+
+// Fungsi untuk memperbarui data pengguna oleh admin
+export const updateUser = mutation({
+  args: {
+    id: v.id("users"),
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+    password: v.optional(v.string()),
+    student_id: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updates } = args;
+    
+    // Jika email diubah, cek apakah sudah ada yang memakai
+    if (updates.email) {
+      const existing = await ctx.db
+        .query("users")
+        .withIndex("by_email", (q) => q.eq("email", updates.email!))
+        .unique();
+      
+      if (existing && existing._id !== id) {
+        throw new ConvexError("Email sudah digunakan oleh pengguna lain.");
+      }
+    }
+
+    await ctx.db.patch(id, updates);
+    return { success: true };
   },
 });
